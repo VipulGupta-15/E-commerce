@@ -1,4 +1,3 @@
-// Sample products to seed the database
 const sampleProducts = [
   {
     name: "Classic White T-Shirt",

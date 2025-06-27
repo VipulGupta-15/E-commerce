@@ -1,22 +1,56 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import type React from "react"
+
+import { useState, useEffect, useCallback, useMemo } from "react"
 import Link from "next/link"
 import type { Product, FilterOptions } from "@/lib/models"
 import { ProductCard } from "@/components/product-card"
 import { ProductFilters } from "@/components/product-filters"
+import { BannerCarousel } from "@/components/banner-carousel"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { toast } from "@/hooks/use-toast"
-import { Loader2, ShoppingBag, Sparkles, TrendingUp, Star, ArrowRight, Users, Package, Heart } from "lucide-react"
+import {
+  Loader2,
+  ShoppingBag,
+  Sparkles,
+  TrendingUp,
+  Search,
+  Filter,
+  Menu,
+  User,
+  Users,
+  Package,
+  X,
+  Grid,
+  List,
+  Star,
+} from "lucide-react"
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [filters, setFilters] = useState<FilterOptions>({})
   const [isSeeding, setIsSeeding] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [showCategorySelector, setShowCategorySelector] = useState(false)
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
-  const fetchProducts = async (filterOptions: FilterOptions = {}) => {
+  const categories = useMemo(
+    () => [
+      { name: "Women", href: "/category/women", icon: "👗", color: "from-pink-500 to-rose-500" },
+      { name: "Men", href: "/category/men", icon: "👔", color: "from-blue-500 to-indigo-500" },
+      { name: "Kids", href: "/category/kids", icon: "🧸", color: "from-green-500 to-emerald-500" },
+      { name: "Accessories", href: "/category/accessories", icon: "👜", color: "from-purple-500 to-violet-500" },
+    ],
+    [],
+  )
+
+  const fetchProducts = useCallback(async (filterOptions: FilterOptions = {}) => {
     setIsLoading(true)
     try {
       const params = new URLSearchParams()
@@ -42,9 +76,9 @@ export default function HomePage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
-  const seedDatabase = async () => {
+  const seedDatabase = useCallback(async () => {
     setIsSeeding(true)
     try {
       const response = await fetch("/api/seed", { method: "POST" })
@@ -55,7 +89,7 @@ export default function HomePage() {
           title: "Success! 🎉",
           description: data.message,
         })
-        fetchProducts()
+        await fetchProducts()
       } else {
         throw new Error(data.error)
       }
@@ -69,98 +103,255 @@ export default function HomePage() {
     } finally {
       setIsSeeding(false)
     }
-  }
+  }, [fetchProducts])
 
   useEffect(() => {
     fetchProducts()
-  }, [])
+  }, [fetchProducts])
 
-  const handleFiltersChange = (newFilters: FilterOptions) => {
+  const handleFiltersChange = useCallback(
+    (newFilters: FilterOptions) => {
+      setFilters(newFilters)
+      fetchProducts(newFilters)
+    },
+    [fetchProducts],
+  )
+
+  const handleSearch = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault()
+      const newFilters = { ...filters, search: searchQuery }
+      setFilters(newFilters)
+      fetchProducts(newFilters)
+      setShowSearch(false)
+    },
+    [filters, searchQuery, fetchProducts],
+  )
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery("")
+    const newFilters = { ...filters }
+    delete newFilters.search
     setFilters(newFilters)
     fetchProducts(newFilters)
-  }
-
-  const featuredProducts = products.filter((p) => p.featured)
-  const displayProducts = products
-
-  const categories = [
-    {
-      name: "Men",
-      description: "Trendy fashion for modern men",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop",
-      count: products.filter((p) => p.category === "Men").length,
-      gradient: "from-blue-600 to-blue-800",
-    },
-    {
-      name: "Women",
-      description: "Elegant styles for every occasion",
-      image: "https://images.unsplash.com/photo-1494790108755-2616c9c0e8e0?w=400&h=500&fit=crop",
-      count: products.filter((p) => p.category === "Women").length,
-      gradient: "from-pink-500 to-rose-600",
-    },
-    {
-      name: "Kids",
-      description: "Fun and comfortable kids wear",
-      image: "https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=400&h=500&fit=crop",
-      count: products.filter((p) => p.category === "Kids").length,
-      gradient: "from-green-500 to-emerald-600",
-    },
-    {
-      name: "Accessories",
-      description: "Complete your perfect look",
-      image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=500&fit=crop",
-      count: products.filter((p) => p.category === "Accessories").length,
-      gradient: "from-purple-600 to-indigo-700",
-    },
-  ]
+  }, [filters, fetchProducts])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-sm border-b sticky top-0 z-50 transition-all duration-300">
+      <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between h-auto md:h-16 gap-4 md:gap-0 py-2 md:py-0">
-            <Link href="/" className="flex items-center gap-3 group w-full md:w-auto justify-center md:justify-start">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-xl group-hover:scale-110 transition-transform duration-300">
+          {/* Mobile Header */}
+          <div className="md:hidden py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-80 p-0">
+                    <div className="p-6">
+                      <div className="flex items-center gap-3 mb-8">
+                        <div className="bg-gradient-to-r from-orange-500 to-pink-500 p-2 rounded-xl">
+                          <ShoppingBag className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h2 className="text-xl font-bold bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
+                            StyleHub
+                          </h2>
+                          <p className="text-sm text-gray-500">Fashion for Everyone</p>
+                        </div>
+                      </div>
+
+                      <nav className="space-y-2">
+                        <div className="mb-6">
+                          <h3 className="text-sm font-semibold text-gray-900 mb-4">Shop by Category</h3>
+                          <div className="space-y-1">
+                            {categories.map((category) => (
+                              <Link
+                                key={category.name}
+                                href={category.href}
+                                className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group"
+                              >
+                                <div
+                                  className={`w-10 h-10 rounded-lg bg-gradient-to-r ${category.color} flex items-center justify-center text-white text-lg group-hover:scale-110 transition-transform`}
+                                >
+                                  {category.icon}
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-900">{category.name}</span>
+                                  <p className="text-xs text-gray-500">Latest trends</p>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="border-t pt-4">
+                          <Link
+                            href="/admin"
+                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors"
+                          >
+                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                              <User className="h-5 w-5 text-gray-600" />
+                            </div>
+                            <span className="font-medium text-gray-900">Admin Panel</span>
+                          </Link>
+                        </div>
+                      </nav>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+
+                <Link href="/" className="flex items-center gap-2">
+                  <div className="bg-gradient-to-r from-orange-500 to-pink-500 p-1.5 rounded-lg">
+                    <ShoppingBag className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-bold text-gray-900">StyleHub</h1>
+                    <p className="text-xs text-gray-500">{products.length} Items</p>
+                  </div>
+                </Link>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowSearch(!showSearch)}>
+                  <Search className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+                >
+                  {viewMode === "grid" ? <List className="h-4 w-4" /> : <Grid className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Mobile Search Bar */}
+            {showSearch && (
+              <div className="mt-3">
+                <form onSubmit={handleSearch} className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <Input
+                      type="text"
+                      placeholder="Search for products, brands and more"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 pr-8 h-10"
+                    />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    {searchQuery && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+                        onClick={clearSearch}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <Button type="submit" size="icon" className="bg-orange-500 hover:bg-orange-600 h-10 w-10">
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </form>
+              </div>
+            )}
+
+            {/* Add Sample Products Button - Mobile */}
+            {products.length === 0 && !isLoading && (
+              <Button
+                onClick={seedDatabase}
+                disabled={isSeeding}
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white mt-3"
+              >
+                {isSeeding ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Adding Products...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Add Sample Products
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+
+          {/* Desktop Header */}
+          <div className="hidden md:flex items-center justify-between h-16">
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="bg-gradient-to-r from-orange-500 to-pink-500 p-2 rounded-xl group-hover:scale-110 transition-transform duration-300">
                 <ShoppingBag className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
                   StyleHub
                 </h1>
-                <p className="text-xs text-gray-500">Fashion for Everyone</p>
+                <p className="text-gray-400">Fashion for Everyone</p>
               </div>
             </Link>
-            <nav className="hidden md:flex items-center space-x-8">
+
+            {/* Desktop Search Bar */}
+            <div className="flex-1 max-w-md mx-8">
+              <form onSubmit={handleSearch} className="relative">
+                <Input
+                  type="text"
+                  placeholder="Search for products, brands and more"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-8"
+                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                {searchQuery && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+                    onClick={clearSearch}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </form>
+            </div>
+
+            {/* Desktop Categories Navigation */}
+            <nav className="flex items-center space-x-6">
               {categories.map((category) => (
                 <Link
                   key={category.name}
-                  href={`/category/${category.name.toLowerCase()}`}
-                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200 relative group"
+                  href={category.href}
+                  className="flex items-center gap-2 text-gray-700 hover:text-orange-500 font-medium transition-colors duration-200 relative group px-3 py-2 rounded-lg hover:bg-orange-50"
                 >
+                  <span className="text-lg">{category.icon}</span>
                   {category.name}
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-300 group-hover:w-full"></span>
                 </Link>
               ))}
             </nav>
-            <div className="flex items-center gap-3 w-full md:w-auto justify-center md:justify-end">
-              <Button
-                variant="outline"
-                asChild
-                className="hover:scale-105 transition-transform duration-200 bg-transparent"
-              >
+
+            <div className="flex items-center gap-3">
+              <Button variant="outline" asChild className="bg-transparent">
                 <Link href="/admin">Admin Panel</Link>
               </Button>
               {products.length === 0 && !isLoading && (
                 <Button
                   onClick={seedDatabase}
                   disabled={isSeeding}
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200"
+                  className="bg-orange-500 hover:bg-orange-600 text-white"
                 >
                   {isSeeding ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Adding Products...
+                      Adding...
                     </>
                   ) : (
                     <>
@@ -172,315 +363,242 @@ export default function HomePage() {
               )}
             </div>
           </div>
-          <nav className="flex md:hidden items-center justify-center gap-4 mt-2">
-            {categories.map((category) => (
-              <Link
-                key={category.name}
-                href={`/category/${category.name.toLowerCase()}`}
-                className="text-gray-700 hover:text-blue-600 font-medium text-sm px-2 py-1 rounded transition-colors duration-200"
-              >
-                {category.name}
-              </Link>
-            ))}
-          </nav>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-          <div className="text-center">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in-up">
-              Fashion That
-              <span className="block bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-                Inspires
-              </span>
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto animate-fade-in-up animation-delay-200">
-              Discover the latest trends and timeless classics in our curated collection
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animation-delay-400">
-              <Button
-                size="lg"
-                className="bg-white text-gray-900 hover:bg-gray-100 transform hover:scale-105 transition-all duration-300"
-              >
-                <TrendingUp className="h-5 w-5 mr-2" />
-                Shop Now
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white text-white hover:bg-white hover:text-gray-900 transform hover:scale-105 transition-all duration-300 bg-transparent"
-              >
-                <Star className="h-5 w-5 mr-2" />
-                View Collections
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Animated background elements */}
-        <div className="absolute top-20 left-10 w-20 h-20 bg-white/10 rounded-full animate-float"></div>
-        <div className="absolute top-40 right-20 w-16 h-16 bg-white/10 rounded-full animate-float animation-delay-1000"></div>
-        <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-white/10 rounded-full animate-float animation-delay-2000"></div>
-      </section>
-
-      {/* Categories Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
-          <div className="text-center mb-10 md:mb-16 px-2">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 animate-fade-in-up">Shop by Category</h2>
-            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto animate-fade-in-up animation-delay-200">
-              Explore our diverse collection tailored for every style and occasion
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-y-8 gap-x-4">
-            {categories.map((category, index) => (
-              <Link
-                key={category.name}
-                href={`/category/${category.name.toLowerCase()}`}
-                className={`group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:scale-105 animate-fade-in-up`}
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="aspect-[4/5] relative">
-                  <img
-                    src={category.image || "/placeholder.svg"}
-                    alt={category.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
+      {/* Category Selector Sheet */}
+      <Sheet open={showCategorySelector} onOpenChange={setShowCategorySelector}>
+        <SheetContent side="bottom" className="h-[400px]">
+          <div className="p-4">
+            <h3 className="text-lg font-semibold text-center mb-6">Choose Category</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {categories.map((category) => (
+                <Link
+                  key={category.name}
+                  href={category.href}
+                  onClick={() => setShowCategorySelector(false)}
+                  className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition-all duration-200 group"
+                >
                   <div
-                    className={`absolute inset-0 bg-gradient-to-t ${category.gradient} opacity-60 group-hover:opacity-70 transition-opacity duration-300`}
-                  ></div>
-
-                  <div className="absolute inset-0 p-6 flex flex-col justify-end text-white">
-                    <h3 className="text-2xl font-bold mb-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                      {category.name}
-                    </h3>
-                    <p className="text-white/90 mb-3 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                      {category.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <Badge className="bg-white/20 text-white border-white/30">{category.count} items</Badge>
-                      <ArrowRight className="h-5 w-5 transform translate-x-2 group-hover:translate-x-0 transition-transform duration-300" />
-                    </div>
+                    className={`w-16 h-16 rounded-full bg-gradient-to-r ${category.color} flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-200`}
+                  >
+                    {category.icon}
                   </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Products */}
-      {!isLoading && products.length > 0 && featuredProducts.length > 0 && (
-        <section className="py-20 bg-gradient-to-br from-gray-50 to-gray-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4 animate-fade-in-up">Featured Collection</h2>
-              <p className="text-xl text-gray-600 max-w-2xl mx-auto animate-fade-in-up animation-delay-200">
-                Handpicked items that define the latest trends
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {featuredProducts.slice(0, 4).map((product, index) => (
-                <div key={product._id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
-                  <ProductCard product={product} />
-                </div>
+                  <span className="font-semibold text-gray-900 group-hover:text-orange-600">{category.name}</span>
+                </Link>
               ))}
             </div>
           </div>
-        </section>
+        </SheetContent>
+      </Sheet>
+
+      {/* Search Results Banner */}
+      {filters.search && (
+        <div className="bg-blue-50 border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-blue-800">
+                Search results for: <strong>"{filters.search}"</strong> ({products.length} items found)
+              </p>
+              <Button variant="ghost" size="sm" onClick={clearSearch} className="text-blue-600 hover:text-blue-800">
+                <X className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Stats Section */}
-      <section className="py-20 bg-white">
+      {/* Banner Carousel - All Screens */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
+        <BannerCarousel />
+      </section>
+
+      {/* Stats Section - Desktop Only */}
+      <section className="hidden md:block py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div className="animate-fade-in-up">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="group hover:scale-105 transition-transform duration-300">
+              <div className="bg-gradient-to-r from-orange-500 to-pink-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:shadow-lg">
                 <Users className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-3xl font-bold text-gray-900 mb-2">10K+</h3>
               <p className="text-gray-600">Happy Customers</p>
             </div>
-            <div className="animate-fade-in-up animation-delay-200">
-              <div className="bg-gradient-to-r from-green-600 to-emerald-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="group hover:scale-105 transition-transform duration-300">
+              <div className="bg-gradient-to-r from-green-600 to-emerald-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:shadow-lg">
                 <Package className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-3xl font-bold text-gray-900 mb-2">500+</h3>
               <p className="text-gray-600">Products Available</p>
             </div>
-            <div className="animate-fade-in-up animation-delay-400">
-              <div className="bg-gradient-to-r from-pink-600 to-rose-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Heart className="h-8 w-8 text-white" />
+            <div className="group hover:scale-105 transition-transform duration-300">
+              <div className="bg-gradient-to-r from-pink-600 to-rose-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:shadow-lg">
+                <Star className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">99%</h3>
-              <p className="text-gray-600">Satisfaction Rate</p>
+              <h3 className="text-3xl font-bold text-gray-900 mb-2">4.9★</h3>
+              <p className="text-gray-600">Average Rating</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* All Products Section */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Filters Sidebar */}
-            <div className="lg:col-span-1 mb-8 lg:mb-0">
-              <div className="animate-fade-in-left">
-                <ProductFilters onFiltersChange={handleFiltersChange} isLoading={isLoading} />
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 md:pb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Filters Sidebar - Desktop */}
+          <div className="hidden lg:block">
+            <div className="sticky top-24">
+              <ProductFilters filters={filters} onFiltersChange={handleFiltersChange} />
+            </div>
+          </div>
+
+          {/* Products Section */}
+          <div className="lg:col-span-3">
+            {/* Section Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <TrendingUp className="h-6 w-6 text-orange-500" />
+                  {filters.category ? `${filters.category} Collection` : "Trending Products"}
+                </h2>
+                <p className="text-gray-600 mt-1">
+                  {isLoading ? "Loading..." : `${products.length} products available`}
+                </p>
+              </div>
+
+              {/* Mobile Filter Button */}
+              <div className="flex items-center gap-2">
+                <Sheet open={showFilters} onOpenChange={setShowFilters}>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm" className="lg:hidden bg-transparent">
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filters
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-80 p-0">
+                    <div className="p-6">
+                      <h3 className="text-lg font-semibold mb-4">Filters</h3>
+                      <ProductFilters filters={filters} onFiltersChange={handleFiltersChange} />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+
+                {/* View Mode Toggle - Desktop */}
+                <div className="hidden md:flex items-center gap-1 border rounded-lg p-1">
+                  <Button
+                    variant={viewMode === "grid" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("grid")}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Grid className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "list" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("list")}
+                    className="h-8 w-8 p-0"
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
 
-            {/* Products Grid */}
-            <div className="lg:col-span-3">
-              <div className="mb-6 animate-fade-in-up">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2 sm:gap-0">
-                  <div>
-                    <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                      {filters.category ? (
-                        <>
-                          <TrendingUp className="h-7 w-7" />
-                          {filters.category} Collection
-                        </>
-                      ) : (
-                        <>
-                          <Star className="h-7 w-7" />
-                          All Products
-                        </>
-                      )}
-                    </h2>
-                    <p className="text-gray-600 mt-1">
-                      {isLoading ? "Loading..." : `${displayProducts.length} products found`}
-                    </p>
-                  </div>
-                  {Object.keys(filters).length > 0 && (
-                    <Badge variant="secondary" className="text-sm animate-pulse">
-                      {Object.keys(filters).length} filter{Object.keys(filters).length > 1 ? "s" : ""} applied
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-20">
+            {/* Products Grid/List */}
+            {isLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-center">
                   <div className="relative">
-                    <Loader2 className="h-16 w-16 animate-spin text-blue-600 mb-4" />
-                    <div className="absolute inset-0 h-16 w-16 border-4 border-blue-200 rounded-full animate-ping"></div>
+                    <Loader2 className="h-16 w-16 animate-spin text-orange-500 mb-4 mx-auto" />
+                    <div className="absolute inset-0 h-16 w-16 border-4 border-orange-200 rounded-full animate-ping mx-auto"></div>
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Loading Products...</h3>
-                  <p className="text-gray-600">Discovering amazing items for you</p>
+                  <p className="text-gray-600">Please wait while we fetch the latest items</p>
                 </div>
-              ) : displayProducts.length === 0 ? (
-                <div className="text-center py-20">
-                  <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-32 h-32 flex items-center justify-center mx-auto mb-6 animate-bounce">
-                    <ShoppingBag className="h-16 w-16 text-gray-400" />
+              </div>
+            ) : products.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+                  <ShoppingBag className="h-12 w-12 text-gray-400" />
+                </div>
+                <h3 className="text-2xl font-semibold text-gray-900 mb-4">No Products Found</h3>
+                <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                  {filters.search
+                    ? `No products match your search "${filters.search}". Try different keywords.`
+                    : "Get started by adding some sample products to see them here."}
+                </p>
+                {!filters.search && (
+                  <Button
+                    onClick={seedDatabase}
+                    disabled={isSeeding}
+                    size="lg"
+                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                  >
+                    {isSeeding ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Adding Products...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-5 w-5 mr-2" />
+                        Add Sample Products
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div
+                className={
+                  viewMode === "grid"
+                    ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6"
+                    : "space-y-4"
+                }
+              >
+                {products.map((product, index) => (
+                  <div key={product._id} className="animate-fade-in-up" style={{ animationDelay: `${index * 50}ms` }}>
+                    <ProductCard product={product} viewMode={viewMode} />
                   </div>
-                  <h3 className="text-2xl font-semibold text-gray-900 mb-4">No products found</h3>
-                  <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                    {Object.keys(filters).length > 0
-                      ? "Try adjusting your filters or search terms to find what you're looking for."
-                      : "It looks like there are no products available. Add some sample products to get started!"}
-                  </p>
-                  {Object.keys(filters).length === 0 && (
-                    <Button
-                      onClick={seedDatabase}
-                      disabled={isSeeding}
-                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300"
-                    >
-                      {isSeeding ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Adding Products...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          Add Sample Products
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {displayProducts.map((product, index) => (
-                    <div key={product._id} className="animate-fade-in-up" style={{ animationDelay: `${index * 50}ms` }}>
-                      <ProductCard product={product} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-xl">
-                  <ShoppingBag className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    StyleHub
-                  </h3>
-                  <p className="text-gray-400">Fashion for Everyone</p>
-                </div>
-              </div>
-              <p className="text-gray-300 mb-6 max-w-md">
-                Your one-stop destination for trendy and affordable fashion. We bring you the latest styles with quality
-                you can trust.
-              </p>
-              <div className="flex space-x-4">
-                <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors duration-300 cursor-pointer">
-                  <span className="text-sm font-bold">f</span>
-                </div>
-                <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors duration-300 cursor-pointer">
-                  <span className="text-sm font-bold">ig</span>
-                </div>
-                <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-400 transition-colors duration-300 cursor-pointer">
-                  <span className="text-sm font-bold">tw</span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-semibold text-white mb-6">Categories</h4>
-              <ul className="space-y-3">
-                {categories.map((category) => (
-                  <li key={category.name}>
-                    <Link
-                      href={`/category/${category.name.toLowerCase()}`}
-                      className="text-gray-400 hover:text-white transition-colors duration-200"
-                    >
-                      {category.name}
-                    </Link>
-                  </li>
                 ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold text-white mb-6">Contact</h4>
-              <ul className="space-y-3 text-gray-400">
-                <li>WhatsApp: +91 9004401145</li>
-                <li>Email: info@stylehub.com</li>
-                <li>Support: 24/7 Available</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 StyleHub. All rights reserved. Made with ❤️ for fashion lovers.</p>
+              </div>
+            )}
           </div>
         </div>
-      </footer>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+        <div className="grid grid-cols-4 gap-1 p-2">
+          <Link href="/" className="flex flex-col items-center gap-1 p-2 rounded-lg text-orange-500 bg-orange-50">
+            <ShoppingBag className="h-5 w-5" />
+            <span className="text-xs font-medium">Home</span>
+          </Link>
+          <button
+            onClick={() => setShowCategorySelector(true)}
+            className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-colors"
+          >
+            <Grid className="h-5 w-5" />
+            <span className="text-xs font-medium">Categories</span>
+          </button>
+          <button
+            onClick={() => setShowSearch(!showSearch)}
+            className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-colors"
+          >
+            <Search className="h-5 w-5" />
+            <span className="text-xs font-medium">Search</span>
+          </button>
+          <Link
+            href="/admin"
+            className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-colors"
+          >
+            <User className="h-5 w-5" />
+            <span className="text-xs font-medium">Admin</span>
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

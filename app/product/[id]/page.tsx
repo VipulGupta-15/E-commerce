@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import Image from "next/image"
 import Link from "next/link"
 import type { Product } from "@/lib/models"
 import { Button } from "@/components/ui/button"
@@ -78,7 +77,7 @@ export default function ProductDetailPage() {
       const relatedResponse = await fetch(`/api/products?category=${productData.category}`)
       if (relatedResponse.ok) {
         const relatedData = await relatedResponse.json()
-        setRelatedProducts(relatedData.filter((p: Product) => p._id !== id).slice(0, 4))
+        setRelatedProducts(relatedData.filter((p: Product) => p._id !== id).slice(0, 6))
       }
     } catch (error) {
       console.error("Error fetching product:", error)
@@ -127,6 +126,26 @@ export default function ProductDetailPage() {
     if (product?.images) {
       setSelectedImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length)
     }
+  }
+
+  // Get proper product image with fallbacks
+  const getProductImage = (imageIndex = 0) => {
+    if (product?.images && product.images[imageIndex]) {
+      return product.images[imageIndex]
+    }
+    if (product?.image) {
+      return product.image
+    }
+
+    // Category-specific placeholder images
+    const categoryImages = {
+      Men: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=600&fit=crop&crop=center",
+      Women: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600&h=600&fit=crop&crop=center",
+      Kids: "https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=600&h=600&fit=crop&crop=center",
+      Accessories: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&h=600&fit=crop&crop=center",
+    }
+
+    return categoryImages[product?.category as keyof typeof categoryImages] || categoryImages.Men
   }
 
   if (isLoading) {
@@ -220,17 +239,15 @@ export default function ProductDetailPage() {
           <div className="space-y-4 animate-fade-in-left">
             {/* Main Image */}
             <div className="relative aspect-square bg-white rounded-2xl overflow-hidden shadow-lg group">
-              <Image
-                src={product.images[selectedImageIndex] || "/placeholder.svg?height=600&width=600"}
+              <img
+                src={getProductImage(selectedImageIndex) || "/placeholder.svg"}
                 alt={product.name}
-                fill
-                className="object-cover transition-transform duration-700 group-hover:scale-110"
-                sizes="(max-width: 768px) 100vw, 50vw"
-                priority
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                loading="priority"
               />
 
               {/* Image Navigation */}
-              {product.images.length > 1 && (
+              {product.images && product.images.length > 1 && (
                 <>
                   <Button
                     variant="ghost"
@@ -271,7 +288,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Thumbnail Images */}
-            {product.images.length > 1 && (
+            {product.images && product.images.length > 1 && (
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {product.images.map((image, index) => (
                   <button
@@ -283,11 +300,9 @@ export default function ProductDetailPage() {
                         : "border-gray-200 hover:border-gray-300"
                     }`}
                   >
-                    <Image
-                      src={image || "/placeholder.svg"}
+                    <img
+                      src={getProductImage(index) || "/placeholder.svg"}
                       alt={`${product.name} ${index + 1}`}
-                      width={80}
-                      height={80}
                       className="w-full h-full object-cover"
                     />
                   </button>
@@ -441,7 +456,7 @@ export default function ProductDetailPage() {
                     <strong>Category:</strong> {product.category}
                   </p>
                   <p>
-                    <strong>Available Sizes:</strong> {product.sizeOptions.join(", ")}
+                    <strong>Available Sizes:</strong> {product.sizeOptions?.join(", ") || "One Size"}
                   </p>
                   {product.colors && (
                     <p>
@@ -483,19 +498,20 @@ export default function ProductDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Related Products */}
+        {/* Related Products - Mobile Responsive Grid */}
         {relatedProducts.length > 0 && (
           <section className="animate-fade-in-up">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-3xl font-bold text-gray-900">You Might Also Like</h2>
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild className="hidden md:flex bg-transparent">
                 <Link href={`/category/${product.category.toLowerCase()}`}>
                   View All {product.category}
                   <ArrowLeft className="h-4 w-4 ml-2 rotate-180" />
                 </Link>
               </Button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Mobile: 2 columns, Desktop: 4 columns */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-6">
               {relatedProducts.map((relatedProduct, index) => (
                 <div
                   key={relatedProduct._id}

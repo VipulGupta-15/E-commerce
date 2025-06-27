@@ -1,141 +1,191 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import type { FilterOptions } from "@/lib/models"
-import { Search, Filter, X, SlidersHorizontal } from "lucide-react"
+import { Search, X, Filter } from "lucide-react"
 
 interface ProductFiltersProps {
   onFiltersChange: (filters: FilterOptions) => void
   isLoading?: boolean
 }
 
-export function ProductFilters({ onFiltersChange, isLoading }: ProductFiltersProps) {
-  const [filters, setFilters] = useState<FilterOptions>({})
+export function ProductFilters({ onFiltersChange, isLoading = false }: ProductFiltersProps) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [priceRange, setPriceRange] = useState([0, 5000])
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [priceRange, setPriceRange] = useState([0, 10000])
+  const [selectedColors, setSelectedColors] = useState<string[]>([])
 
   const categories = ["Men", "Women", "Kids", "Accessories"]
-  const colors = ["Black", "White", "Red", "Blue", "Green", "Yellow", "Pink", "Gray", "Brown", "Navy"]
-  const sizes = ["XS", "S", "M", "L", "XL", "XXL", "2-3Y", "4-5Y", "6-7Y", "8-9Y", "10-11Y"]
+  const colors = ["Black", "White", "Red", "Blue", "Green", "Pink", "Purple", "Yellow"]
 
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      if (searchTerm !== (filters.search || "")) {
-        const newFilters = { ...filters, search: searchTerm || undefined }
-        setFilters(newFilters)
-        onFiltersChange(newFilters)
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchTerm(value)
+      const filters: FilterOptions = {
+        search: value || undefined,
+        category: selectedCategories.length === 1 ? selectedCategories[0] : undefined,
+        minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
+        maxPrice: priceRange[1] < 10000 ? priceRange[1] : undefined,
+        colors: selectedColors.length > 0 ? selectedColors : undefined,
       }
-    }, 500)
+      onFiltersChange(filters)
+    },
+    [selectedCategories, priceRange, selectedColors, onFiltersChange],
+  )
 
-    return () => clearTimeout(debounceTimer)
-  }, [searchTerm])
+  const handleCategoryChange = useCallback(
+    (category: string, checked: boolean) => {
+      const newCategories = checked
+        ? [...selectedCategories, category]
+        : selectedCategories.filter((c) => c !== category)
+      setSelectedCategories(newCategories)
 
-  const handleFilterChange = (key: keyof FilterOptions, value: any) => {
-    const newFilters = { ...filters, [key]: value }
-    setFilters(newFilters)
-    onFiltersChange(newFilters)
-  }
+      const filters: FilterOptions = {
+        search: searchTerm || undefined,
+        category: newCategories.length === 1 ? newCategories[0] : undefined,
+        minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
+        maxPrice: priceRange[1] < 10000 ? priceRange[1] : undefined,
+        colors: selectedColors.length > 0 ? selectedColors : undefined,
+      }
+      onFiltersChange(filters)
+    },
+    [searchTerm, selectedCategories, priceRange, selectedColors, onFiltersChange],
+  )
 
-  const handlePriceRangeChange = (values: number[]) => {
-    setPriceRange(values)
-    const newFilters = {
-      ...filters,
-      minPrice: values[0] > 0 ? values[0] : undefined,
-      maxPrice: values[1] < 5000 ? values[1] : undefined,
-    }
-    setFilters(newFilters)
-    onFiltersChange(newFilters)
-  }
+  const handlePriceChange = useCallback(
+    (value: number[]) => {
+      setPriceRange(value)
+      const filters: FilterOptions = {
+        search: searchTerm || undefined,
+        category: selectedCategories.length === 1 ? selectedCategories[0] : undefined,
+        minPrice: value[0] > 0 ? value[0] : undefined,
+        maxPrice: value[1] < 10000 ? value[1] : undefined,
+        colors: selectedColors.length > 0 ? selectedColors : undefined,
+      }
+      onFiltersChange(filters)
+    },
+    [searchTerm, selectedCategories, selectedColors, onFiltersChange],
+  )
 
-  const clearFilters = () => {
-    setFilters({})
+  const handleColorChange = useCallback(
+    (color: string, checked: boolean) => {
+      const newColors = checked ? [...selectedColors, color] : selectedColors.filter((c) => c !== color)
+      setSelectedColors(newColors)
+
+      const filters: FilterOptions = {
+        search: searchTerm || undefined,
+        category: selectedCategories.length === 1 ? selectedCategories[0] : undefined,
+        minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
+        maxPrice: priceRange[1] < 10000 ? priceRange[1] : undefined,
+        colors: newColors.length > 0 ? newColors : undefined,
+      }
+      onFiltersChange(filters)
+    },
+    [searchTerm, selectedCategories, priceRange, selectedColors, onFiltersChange],
+  )
+
+  const clearAllFilters = useCallback(() => {
     setSearchTerm("")
-    setPriceRange([0, 5000])
+    setSelectedCategories([])
+    setPriceRange([0, 10000])
+    setSelectedColors([])
     onFiltersChange({})
-  }
+  }, [onFiltersChange])
 
-  const hasActiveFilters = Object.keys(filters).length > 0 || searchTerm
+  const hasActiveFilters =
+    searchTerm ||
+    selectedCategories.length > 0 ||
+    priceRange[0] > 0 ||
+    priceRange[1] < 10000 ||
+    selectedColors.length > 0
 
   return (
-    <Card className="sticky top-4">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+    <Card className="w-full">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
             Filters
-          </div>
-          <div className="flex items-center gap-2">
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-              >
-                <X className="h-4 w-4 mr-1" />
-                Clear
-              </Button>
-            )}
-            <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="md:hidden">
-              <SlidersHorizontal className="h-4 w-4" />
+          </CardTitle>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-red-600 hover:text-red-700">
+              <X className="h-4 w-4 mr-1" />
+              Clear All
             </Button>
-          </div>
-        </CardTitle>
+          )}
+        </div>
       </CardHeader>
-      <CardContent className={`space-y-6 ${!isExpanded ? "hidden md:block" : ""}`}>
+      <CardContent className="space-y-6">
         {/* Search */}
         <div className="space-y-2">
-          <Label>Search Products</Label>
+          <Label htmlFor="search">Search Products</Label>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search by name or description..."
+              id="search"
+              type="text"
+              placeholder="Search by name..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10"
               disabled={isLoading}
             />
           </div>
         </div>
 
-        {/* Category */}
-        <div className="space-y-2">
+        {/* Categories */}
+        <div className="space-y-3">
           <Label>Category</Label>
-          <Select
-            value={filters.category || "all"}
-            onValueChange={(value) => handleFilterChange("category", value === "all" ? undefined : value)}
-            disabled={isLoading}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category} value={category}>
+          <div className="grid grid-cols-2 gap-2">
+            {categories.map((category) => (
+              <div key={category} className="flex items-center space-x-2">
+                <Checkbox
+                  id={category}
+                  checked={selectedCategories.includes(category)}
+                  onCheckedChange={(checked) => handleCategoryChange(category, checked as boolean)}
+                  disabled={isLoading}
+                />
+                <Label htmlFor={category} className="text-sm font-normal cursor-pointer">
                   {category}
-                </SelectItem>
+                </Label>
+              </div>
+            ))}
+          </div>
+          {selectedCategories.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {selectedCategories.map((category) => (
+                <Badge key={category} variant="secondary" className="text-xs">
+                  {category}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 ml-1 hover:bg-transparent"
+                    onClick={() => handleCategoryChange(category, false)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
               ))}
-            </SelectContent>
-          </Select>
+            </div>
+          )}
         </div>
 
         {/* Price Range */}
         <div className="space-y-3">
           <Label>
-            Price Range: ₹{priceRange[0]} - ₹{priceRange[1]}
+            Price Range: ₹{priceRange[0].toLocaleString()} - ₹{priceRange[1].toLocaleString()}
           </Label>
           <Slider
             value={priceRange}
-            onValueChange={handlePriceRangeChange}
-            max={5000}
+            onValueChange={handlePriceChange}
+            max={10000}
             min={0}
             step={100}
             className="w-full"
@@ -143,99 +193,54 @@ export function ProductFilters({ onFiltersChange, isLoading }: ProductFiltersPro
           />
           <div className="flex justify-between text-sm text-gray-500">
             <span>₹0</span>
-            <span>₹5000+</span>
+            <span>₹10,000+</span>
           </div>
         </div>
 
         {/* Colors */}
         <div className="space-y-3">
           <Label>Colors</Label>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {colors.map((color) => (
-              <Button
-                key={color}
-                variant={filters.colors?.includes(color) ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  const currentColors = filters.colors || []
-                  const newColors = currentColors.includes(color)
-                    ? currentColors.filter((c) => c !== color)
-                    : [...currentColors, color]
-                  handleFilterChange("colors", newColors.length > 0 ? newColors : undefined)
-                }}
-                className="text-xs p-2 h-8"
-                disabled={isLoading}
-                title={color}
-              >
-                <div
-                  className="w-3 h-3 rounded-full border border-gray-300 mr-1"
-                  style={{ backgroundColor: color.toLowerCase() }}
+              <div key={color} className="flex items-center space-x-2">
+                <Checkbox
+                  id={color}
+                  checked={selectedColors.includes(color)}
+                  onCheckedChange={(checked) => handleColorChange(color, checked as boolean)}
+                  disabled={isLoading}
                 />
-                {color.slice(0, 3)}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Sizes */}
-        <div className="space-y-3">
-          <Label>Sizes</Label>
-          <div className="grid grid-cols-3 gap-2">
-            {sizes.map((size) => (
-              <Button
-                key={size}
-                variant={filters.sizes?.includes(size) ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  const currentSizes = filters.sizes || []
-                  const newSizes = currentSizes.includes(size)
-                    ? currentSizes.filter((s) => s !== size)
-                    : [...currentSizes, size]
-                  handleFilterChange("sizes", newSizes.length > 0 ? newSizes : undefined)
-                }}
-                className="text-xs"
-                disabled={isLoading}
-              >
-                {size}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Active Filters Summary */}
-        {hasActiveFilters && (
-          <div className="space-y-2 pt-4 border-t">
-            <Label className="text-sm font-medium">Active Filters:</Label>
-            <div className="flex flex-wrap gap-1">
-              {filters.category && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                  {filters.category}
-                </span>
-              )}
-              {filters.colors?.map((color) => (
-                <span
-                  key={color}
-                  className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800"
-                >
+                <Label htmlFor={color} className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                  <div
+                    className="w-4 h-4 rounded-full border border-gray-300"
+                    style={{ backgroundColor: color.toLowerCase() }}
+                  />
                   {color}
-                </span>
-              ))}
-              {filters.sizes?.map((size) => (
-                <span
-                  key={size}
-                  className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800"
-                >
-                  {size}
-                </span>
-              ))}
-              {(filters.minPrice || filters.maxPrice) && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">
-                  ₹{filters.minPrice || 0} - ₹{filters.maxPrice || "5000+"}
-                </span>
-              )}
-            </div>
+                </Label>
+              </div>
+            ))}
           </div>
-        )}
+          {selectedColors.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {selectedColors.map((color) => (
+                <Badge key={color} variant="secondary" className="text-xs">
+                  <div
+                    className="w-3 h-3 rounded-full border border-gray-300 mr-1"
+                    style={{ backgroundColor: color.toLowerCase() }}
+                  />
+                  {color}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 ml-1 hover:bg-transparent"
+                    onClick={() => handleColorChange(color, false)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   )

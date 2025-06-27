@@ -11,6 +11,23 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Invalid order ID" }, { status: 400 })
     }
 
+    // If status is being updated to "Delivered", decrease product stock
+    if (updates.status === "Delivered") {
+      // First get the order to find the product ID
+      const order = await db.collection("orders").findOne({ _id: new ObjectId(params.id) })
+
+      if (order && order.productId) {
+        // Decrease the product stock by 1
+        await db.collection("products").updateOne(
+          { _id: new ObjectId(order.productId) },
+          {
+            $inc: { stock: -1 },
+            $set: { updatedAt: new Date() },
+          },
+        )
+      }
+    }
+
     const result = await db
       .collection("orders")
       .updateOne({ _id: new ObjectId(params.id) }, { $set: { ...updates, updatedAt: new Date() } })

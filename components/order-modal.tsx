@@ -1,16 +1,17 @@
 "use client"
 
 import type React from "react"
+
 import { useState } from "react"
-import type { Product } from "@/lib/models"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/hooks/use-toast"
-import { Loader2, MessageCircle, Star, Truck, Shield, RotateCcw } from "lucide-react"
+import type { Product } from "@/lib/models"
+import { ShoppingCart, Phone, User, MapPin, MessageSquare, Star } from "lucide-react"
 
 interface OrderModalProps {
   product: Product
@@ -22,47 +23,28 @@ interface OrderModalProps {
 
 export function OrderModal({ product, isOpen, onClose, selectedSize, selectedColor }: OrderModalProps) {
   const [customerName, setCustomerName] = useState("")
-  const [phoneNumber, setPhoneNumber] = useState("")
-  const [size, setSize] = useState(selectedSize || "")
-  const [color, setColor] = useState(selectedColor || "")
+  const [customerPhone, setCustomerPhone] = useState("")
+  const [customerAddress, setCustomerAddress] = useState("")
+  const [quantity, setQuantity] = useState(1)
+  const [specialInstructions, setSpecialInstructions] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!customerName.trim()) {
+    if (!customerName || !customerPhone || !customerAddress) {
       toast({
-        title: "Name Required",
-        description: "Please enter your full name.",
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
         variant: "destructive",
       })
       return
     }
 
-    if (!phoneNumber.trim()) {
+    if (quantity > product.stock) {
       toast({
-        title: "Phone Number Required",
-        description: "Please enter your phone number.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    // Validate phone number format (Indian mobile number)
-    const phoneRegex = /^[6-9]\d{9}$/
-    if (!phoneRegex.test(phoneNumber)) {
-      toast({
-        title: "Invalid Phone Number",
-        description: "Please enter a valid 10-digit Indian mobile number.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (!size) {
-      toast({
-        title: "Size Required",
-        description: "Please select a size.",
+        title: "Insufficient Stock",
+        description: `Only ${product.stock} items available.`,
         variant: "destructive",
       })
       return
@@ -71,64 +53,75 @@ export function OrderModal({ product, isOpen, onClose, selectedSize, selectedCol
     setIsSubmitting(true)
 
     try {
-      // Save order to database
-      const orderResponse = await fetch("/api/orders", {
+      const orderData = {
+        productId: product._id,
+        productName: product.name,
+        productPrice: product.price,
+        quantity,
+        customerName,
+        customerPhone,
+        customerAddress,
+        selectedSize,
+        selectedColor,
+        specialInstructions,
+        totalAmount: product.price * quantity,
+      }
+
+      const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          productId: product._id,
-          productName: product.name,
-          productImage: product.images[0],
-          customerName: customerName.trim(),
-          phoneNumber: phoneNumber.trim(),
-          size: size,
-          color: color || undefined,
-          price: product.price,
-        }),
+        body: JSON.stringify(orderData),
       })
 
-      if (!orderResponse.ok) {
-        const errorData = await orderResponse.json()
-        throw new Error(errorData.error || "Failed to save order")
+      if (!response.ok) {
+        throw new Error("Failed to place order")
       }
 
-      // Create WhatsApp message
-      const whatsappMessage = `Hi! I want to order:
+      const order = await response.json()
 
-🛍️ *Product:* ${product.name}
-📏 *Size:* ${size}
-${color ? `🎨 *Color:* ${color}` : ""}
+      // Create WhatsApp message
+      const whatsappMessage = `
+🛍️ *New Order from StyleHub*
+
+📦 *Product:* ${product.name}
 💰 *Price:* ₹${product.price.toLocaleString()}
+📊 *Quantity:* ${quantity}
+${selectedSize ? `📏 *Size:* ${selectedSize}` : ""}
+${selectedColor ? `🎨 *Color:* ${selectedColor}` : ""}
+💵 *Total Amount:* ₹${(product.price * quantity).toLocaleString()}
 
 👤 *Customer Details:*
-• Name: ${customerName}
-• Phone: ${phoneNumber}
+*Name:* ${customerName}
+*Phone:* ${customerPhone}
+*Address:* ${customerAddress}
 
-Please confirm my order and let me know the payment details. Thank you!`
+${specialInstructions ? `📝 *Special Instructions:* ${specialInstructions}` : ""}
+
+*Order ID:* ${order._id}
+      `.trim()
 
       const whatsappUrl = `https://wa.me/919004401145?text=${encodeURIComponent(whatsappMessage)}`
-
-      // Open WhatsApp
       window.open(whatsappUrl, "_blank")
 
       toast({
         title: "Order Placed Successfully! 🎉",
-        description: "You're being redirected to WhatsApp to complete your order.",
+        description: "You'll be redirected to WhatsApp to complete your order.",
       })
 
-      // Reset form and close modal
+      // Reset form
       setCustomerName("")
-      setPhoneNumber("")
-      setSize("")
-      setColor("")
+      setCustomerPhone("")
+      setCustomerAddress("")
+      setQuantity(1)
+      setSpecialInstructions("")
       onClose()
     } catch (error) {
       console.error("Error placing order:", error)
       toast({
         title: "Order Failed",
-        description: error instanceof Error ? error.message : "Failed to place order. Please try again.",
+        description: "Something went wrong. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -136,205 +129,218 @@ Please confirm my order and let me know the payment details. Thank you!`
     }
   }
 
-  const handleClose = () => {
-    if (!isSubmitting) {
-      setCustomerName("")
-      setPhoneNumber("")
-      setSize("")
-      setColor("")
-      onClose()
-    }
-  }
+  const totalAmount = product.price * quantity
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <MessageCircle className="h-6 w-6 text-green-600" />
-            Complete Your Order
+          <DialogTitle className="flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5" />
+            Place Order
           </DialogTitle>
+          <DialogDescription>Fill in your details to place an order via WhatsApp</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Product Summary */}
-          <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border">
-            <div className="relative w-20 h-20 rounded-lg overflow-hidden">
-              <img
-                src={product.images[0] || "/placeholder.svg?height=80&width=80"}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-              {product.featured && (
-                <Badge className="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs">
-                  <Star className="h-2 w-2 mr-1" />
-                  Featured
-                </Badge>
-              )}
-            </div>
+        {/* Product Summary */}
+        <div className="bg-gray-50 p-4 rounded-lg mb-4">
+          <div className="flex items-start gap-3">
+            <img
+              src={product.image || "/placeholder.svg?height=80&width=80"}
+              alt={product.name}
+              className="w-20 h-20 object-cover rounded-lg"
+            />
             <div className="flex-1">
-              <h4 className="font-semibold text-lg line-clamp-2">{product.name}</h4>
-              <p className="text-green-600 font-bold text-xl">₹{product.price.toLocaleString()}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className="text-xs">
-                  {product.category}
-                </Badge>
-                {product.stock && product.stock < 10 && (
-                  <Badge className="bg-orange-500 text-white text-xs">Only {product.stock} left</Badge>
+              <h3 className="font-semibold text-gray-900 mb-1">{product.name}</h3>
+              <p className="text-sm text-gray-600 mb-2">{product.description}</p>
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="secondary">{product.category}</Badge>
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                  ))}
+                  <span className="text-xs text-gray-600">(4.8)</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-bold text-green-600">₹{product.price.toLocaleString()}</span>
+                <span className="text-sm text-gray-500">{product.stock} in stock</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Selected Options */}
+          {(selectedSize || selectedColor) && (
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <div className="flex gap-4 text-sm">
+                {selectedSize && (
+                  <div>
+                    <span className="text-gray-600">Size: </span>
+                    <Badge variant="outline">{selectedSize}</Badge>
+                  </div>
+                )}
+                {selectedColor && (
+                  <div>
+                    <span className="text-gray-600">Color: </span>
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <div
+                        className="w-3 h-3 rounded-full border border-gray-300"
+                        style={{ backgroundColor: selectedColor.toLowerCase() }}
+                      />
+                      {selectedColor}
+                    </Badge>
+                  </div>
                 )}
               </div>
             </div>
+          )}
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Customer Name */}
+          <div className="space-y-2">
+            <Label htmlFor="customerName" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Full Name *
+            </Label>
+            <Input
+              id="customerName"
+              type="text"
+              placeholder="Enter your full name"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              required
+            />
           </div>
 
-          {/* Customer Information */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="customerName" className="text-sm font-medium">
-                Your Full Name *
-              </Label>
-              <Input
-                id="customerName"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Enter your full name"
-                required
-                disabled={isSubmitting}
-                className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+          {/* Customer Phone */}
+          <div className="space-y-2">
+            <Label htmlFor="customerPhone" className="flex items-center gap-2">
+              <Phone className="h-4 w-4" />
+              Phone Number *
+            </Label>
+            <Input
+              id="customerPhone"
+              type="tel"
+              placeholder="Enter your phone number"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              required
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phoneNumber" className="text-sm font-medium">
-                Phone Number *
-              </Label>
+          {/* Customer Address */}
+          <div className="space-y-2">
+            <Label htmlFor="customerAddress" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Delivery Address *
+            </Label>
+            <Textarea
+              id="customerAddress"
+              placeholder="Enter your complete delivery address"
+              value={customerAddress}
+              onChange={(e) => setCustomerAddress(e.target.value)}
+              rows={3}
+              required
+            />
+          </div>
+
+          {/* Quantity */}
+          <div className="space-y-2">
+            <Label htmlFor="quantity">Quantity</Label>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                disabled={quantity <= 1}
+              >
+                -
+              </Button>
               <Input
-                id="phoneNumber"
-                value={phoneNumber}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, "").slice(0, 10)
-                  setPhoneNumber(value)
-                }}
-                placeholder="Enter 10-digit mobile number"
-                required
-                disabled={isSubmitting}
-                maxLength={10}
-                className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                id="quantity"
+                type="number"
+                min="1"
+                max={product.stock}
+                value={quantity}
+                onChange={(e) =>
+                  setQuantity(Math.max(1, Math.min(product.stock, Number.parseInt(e.target.value) || 1)))
+                }
+                className="w-20 text-center"
               />
-              <p className="text-xs text-gray-500 flex items-center gap-1">
-                <MessageCircle className="h-3 w-3" />
-                We'll contact you on WhatsApp for order confirmation
-              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                disabled={quantity >= product.stock}
+              >
+                +
+              </Button>
+              <span className="text-sm text-gray-600">Max: {product.stock}</span>
             </div>
           </div>
 
-          {/* Product Options */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="size" className="text-sm font-medium">
-                Select Size *
-              </Label>
-              <Select value={size} onValueChange={setSize} required disabled={isSubmitting}>
-                <SelectTrigger className="transition-all duration-200 focus:ring-2 focus:ring-blue-500">
-                  <SelectValue placeholder="Choose your size" />
-                </SelectTrigger>
-                <SelectContent>
-                  {product.sizeOptions.map((sizeOption) => (
-                    <SelectItem key={sizeOption} value={sizeOption}>
-                      {sizeOption}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Special Instructions */}
+          <div className="space-y-2">
+            <Label htmlFor="specialInstructions" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Special Instructions (Optional)
+            </Label>
+            <Textarea
+              id="specialInstructions"
+              placeholder="Any special requests or instructions..."
+              value={specialInstructions}
+              onChange={(e) => setSpecialInstructions(e.target.value)}
+              rows={2}
+            />
+          </div>
 
-            {product.colors && product.colors.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="color" className="text-sm font-medium">
-                  Select Color
-                </Label>
-                <Select value={color} onValueChange={setColor} disabled={isSubmitting}>
-                  <SelectTrigger className="transition-all duration-200 focus:ring-2 focus:ring-blue-500">
-                    <SelectValue placeholder="Choose a color (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {product.colors.map((colorOption) => (
-                      <SelectItem key={colorOption} value={colorOption}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-4 h-4 rounded-full border border-gray-300"
-                            style={{ backgroundColor: colorOption.toLowerCase() }}
-                          />
-                          {colorOption}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          {/* Order Summary */}
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-gray-900 mb-2">Order Summary</h4>
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span>Price per item:</span>
+                <span>₹{product.price.toLocaleString()}</span>
               </div>
-            )}
-          </div>
-
-          {/* Features */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="flex flex-col items-center p-3 bg-green-50 rounded-lg">
-              <Truck className="h-5 w-5 text-green-600 mb-1" />
-              <span className="text-xs font-medium text-green-900">Free Delivery</span>
-              <span className="text-xs text-green-700">Above ₹999</span>
-            </div>
-            <div className="flex flex-col items-center p-3 bg-blue-50 rounded-lg">
-              <Shield className="h-5 w-5 text-blue-600 mb-1" />
-              <span className="text-xs font-medium text-blue-900">Secure</span>
-              <span className="text-xs text-blue-700">Payment</span>
-            </div>
-            <div className="flex flex-col items-center p-3 bg-purple-50 rounded-lg">
-              <RotateCcw className="h-5 w-5 text-purple-600 mb-1" />
-              <span className="text-xs font-medium text-purple-900">Easy Returns</span>
-              <span className="text-xs text-purple-700">7 Days</span>
+              <div className="flex justify-between">
+                <span>Quantity:</span>
+                <span>{quantity}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-lg border-t border-blue-200 pt-2 mt-2">
+                <span>Total Amount:</span>
+                <span className="text-green-600">₹{totalAmount.toLocaleString()}</span>
+              </div>
             </div>
           </div>
 
-          {/* Order Process Info */}
-          <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
-            <h4 className="font-semibold text-blue-900 mb-2">📱 What happens next?</h4>
-            <div className="space-y-2 text-sm text-blue-800">
-              <p>1. Click "Order via WhatsApp" below</p>
-              <p>2. You'll be redirected to WhatsApp</p>
-              <p>3. Our team will confirm your order</p>
-              <p>4. We'll share secure payment details</p>
-              <p>5. Your order will be processed & shipped</p>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
+          {/* Submit Button */}
           <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              className="flex-1 hover:bg-gray-50 transition-colors duration-200 bg-transparent"
-              disabled={isSubmitting}
-            >
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1 bg-transparent">
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
-              className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200"
+              disabled={isSubmitting || product.stock === 0}
+              className="flex-1 bg-green-600 hover:bg-green-700"
             >
               {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
-                </>
+                "Placing Order..."
               ) : (
                 <>
-                  <MessageCircle className="h-4 w-4 mr-2" />
+                  <Phone className="h-4 w-4 mr-2" />
                   Order via WhatsApp
                 </>
               )}
             </Button>
           </div>
         </form>
+
+        <div className="text-xs text-gray-500 text-center mt-4">
+          You'll be redirected to WhatsApp to complete your order with our team.
+        </div>
       </DialogContent>
     </Dialog>
   )

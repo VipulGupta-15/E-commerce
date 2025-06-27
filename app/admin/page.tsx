@@ -4,101 +4,78 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import type { Product, Order } from "@/lib/models"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "@/hooks/use-toast"
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Package,
-  Users,
-  ShoppingCart,
-  MessageCircle,
-  Calendar,
-  IndianRupee,
-  Loader2,
-  Star,
-  ArrowLeft,
-  RefreshCw,
-} from "lucide-react"
-import { useRouter } from "next/navigation"
+import { Loader2, Package, ShoppingCart, Users, TrendingUp, Eye, EyeOff, Plus, Edit, Trash2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 export default function AdminPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<Order[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isAddingProduct, setIsAddingProduct] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
+  const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false)
 
-  // Auth state
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [loginForm, setLoginForm] = useState({ username: "", password: "" })
-  const [loginError, setLoginError] = useState("")
-  const router = useRouter()
-
-  // Product form state
+  // Form state for adding/editing products
   const [productForm, setProductForm] = useState({
     name: "",
     description: "",
-    category: "Men" as Product["category"],
-    price: 0,
-    sizeOptions: [] as string[],
-    images: [] as string[],
-    colors: [] as string[],
-    stock: 100,
+    price: "",
+    category: "",
+    stock: "",
+    colors: "",
+    sizes: "",
+    images: "",
     featured: false,
   })
 
+  // Form state for editing orders
+  const [orderForm, setOrderForm] = useState({
+    size: "",
+    color: "",
+    status: "",
+  })
+
   useEffect(() => {
-    // Check localStorage for auth
-    if (typeof window !== "undefined") {
-      const auth = localStorage.getItem("admin-auth")
-      if (auth === "true") setIsAuthenticated(true)
+    const authStatus = localStorage.getItem("adminAuthenticated")
+    if (authStatus === "true") {
+      setIsAuthenticated(true)
+      fetchData()
     }
-    fetchProducts()
-    fetchOrders()
   }, [])
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (
-      loginForm.username === "admin" &&
-      loginForm.password === "admin123"
-    ) {
-      setIsAuthenticated(true)
-      localStorage.setItem("admin-auth", "true")
-      setLoginError("")
-    } else {
-      setLoginError("Invalid username or password")
-    }
-  }
-
-  const handleLogout = () => {
-    setIsAuthenticated(false)
-    localStorage.removeItem("admin-auth")
-    router.refresh()
-  }
-
-  const fetchProducts = async () => {
+  const fetchData = async () => {
+    setIsLoading(true)
     try {
-      const response = await fetch("/api/products")
-      if (!response.ok) throw new Error("Failed to fetch products")
-      const data = await response.json()
-      setProducts(data)
+      const [productsRes, ordersRes] = await Promise.all([fetch("/api/products"), fetch("/api/orders")])
+
+      if (productsRes.ok) {
+        const productsData = await productsRes.json()
+        setProducts(productsData)
+      }
+
+      if (ordersRes.ok) {
+        const ordersData = await ordersRes.json()
+        setOrders(ordersData)
+      }
     } catch (error) {
-      console.error("Error fetching products:", error)
+      console.error("Error fetching data:", error)
       toast({
         title: "Error",
-        description: "Failed to fetch products.",
+        description: "Failed to fetch data",
         variant: "destructive",
       })
     } finally {
@@ -106,449 +83,480 @@ export default function AdminPage() {
     }
   }
 
-  const fetchOrders = async () => {
-    try {
-      const response = await fetch("/api/orders")
-      if (!response.ok) throw new Error("Failed to fetch orders")
-      const data = await response.json()
-      setOrders(data)
-    } catch (error) {
-      console.error("Error fetching orders:", error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch orders.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleProductSubmit = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
-
-    try {
-      // Validate form
-      if (!productForm.name.trim() || !productForm.description.trim() || productForm.price <= 0) {
-        throw new Error("Please fill in all required fields with valid values")
-      }
-
-      if (productForm.sizeOptions.length === 0) {
-        throw new Error("Please add at least one size option")
-      }
-
-      if (productForm.images.length === 0) {
-        throw new Error("Please add at least one product image")
-      }
-
-      const url = editingProduct ? `/api/products/${editingProduct._id}` : "/api/products"
-      const method = editingProduct ? "PUT" : "POST"
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(productForm),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to save product")
-      }
-
-      toast({
-        title: "Success! 🎉",
-        description: `Product ${editingProduct ? "updated" : "created"} successfully!`,
-      })
-
-      setIsProductModalOpen(false)
-      setEditingProduct(null)
-      resetProductForm()
-      fetchProducts()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save product. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleDeleteProduct = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) return
-
-    try {
-      const response = await fetch(`/api/products/${id}`, { method: "DELETE" })
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to delete product")
-      }
-
+    if (username === "admin" && password === "admin123") {
+      setIsAuthenticated(true)
+      localStorage.setItem("adminAuthenticated", "true")
+      fetchData()
       toast({
         title: "Success",
-        description: "Product deleted successfully!",
+        description: "Logged in successfully!",
       })
-      fetchProducts()
-    } catch (error) {
+    } else {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete product.",
+        description: "Invalid credentials",
         variant: "destructive",
       })
     }
   }
 
-  const handleUpdateOrderStatus = async (orderId: string, status: Order["status"]) => {
-    try {
-      const response = await fetch(`/api/orders/${orderId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to update order")
-      }
-
-      toast({
-        title: "Success",
-        description: "Order status updated successfully!",
-      })
-      fetchOrders()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update order status.",
-        variant: "destructive",
-      })
-    }
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    localStorage.removeItem("adminAuthenticated")
+    setUsername("")
+    setPassword("")
   }
 
   const resetProductForm = () => {
     setProductForm({
       name: "",
       description: "",
-      category: "Men",
-      price: 0,
-      sizeOptions: [],
-      images: [],
-      colors: [],
-      stock: 100,
+      price: "",
+      category: "",
+      stock: "",
+      colors: "",
+      sizes: "",
+      images: "",
       featured: false,
     })
+    setEditingProduct(null)
   }
 
-  const openEditProduct = (product: Product) => {
+  const handleAddProduct = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsAddingProduct(true)
+
+    try {
+      const productData = {
+        name: productForm.name,
+        description: productForm.description,
+        price: Number.parseInt(productForm.price),
+        category: productForm.category,
+        stock: Number.parseInt(productForm.stock),
+        colors: productForm.colors
+          .split(",")
+          .map((c) => c.trim())
+          .filter(Boolean),
+        sizeOptions: productForm.sizes
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        images: productForm.images
+          .split(",")
+          .map((img) => img.trim())
+          .filter(Boolean),
+        featured: productForm.featured,
+      }
+
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(productData),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to add product")
+      }
+
+      const newProduct = await response.json()
+      setProducts([newProduct, ...products])
+      resetProductForm()
+      setIsDialogOpen(false)
+
+      toast({
+        title: "Success",
+        description: "Product added successfully!",
+      })
+    } catch (error) {
+      console.error("Error adding product:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add product",
+        variant: "destructive",
+      })
+    } finally {
+      setIsAddingProduct(false)
+    }
+  }
+
+  const handleEditProduct = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingProduct) return
+
+    setIsAddingProduct(true)
+
+    try {
+      const productData = {
+        name: productForm.name,
+        description: productForm.description,
+        price: Number.parseInt(productForm.price),
+        category: productForm.category,
+        stock: Number.parseInt(productForm.stock),
+        colors: productForm.colors
+          .split(",")
+          .map((c) => c.trim())
+          .filter(Boolean),
+        sizeOptions: productForm.sizes
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        images: productForm.images
+          .split(",")
+          .map((img) => img.trim())
+          .filter(Boolean),
+        featured: productForm.featured,
+      }
+
+      const response = await fetch(`/api/products/${editingProduct._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(productData),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update product")
+      }
+
+      const updatedProduct = { ...editingProduct, ...productData }
+      setProducts(products.map((p) => (p._id === editingProduct._id ? updatedProduct : p)))
+      resetProductForm()
+      setIsDialogOpen(false)
+
+      toast({
+        title: "Success",
+        description: "Product updated successfully!",
+      })
+    } catch (error) {
+      console.error("Error updating product:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update product",
+        variant: "destructive",
+      })
+    } finally {
+      setIsAddingProduct(false)
+    }
+  }
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return
+
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to delete product")
+      }
+
+      setProducts(products.filter((p) => p._id !== productId))
+
+      toast({
+        title: "Success",
+        description: "Product deleted successfully!",
+      })
+    } catch (error) {
+      console.error("Error deleting product:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete product",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const startEditProduct = (product: Product) => {
     setEditingProduct(product)
     setProductForm({
       name: product.name,
       description: product.description,
+      price: product.price.toString(),
       category: product.category,
-      price: product.price,
-      sizeOptions: product.sizeOptions,
-      images: product.images,
-      colors: product.colors || [],
-      stock: product.stock || 100,
+      stock: (product.stock || 0).toString(),
+      colors: product.colors?.join(", ") || "",
+      sizes: product.sizeOptions?.join(", ") || "",
+      images: product.images?.join(", ") || "",
       featured: product.featured || false,
     })
-    setIsProductModalOpen(true)
+    setIsDialogOpen(true)
   }
 
-  const openWhatsApp = (order: Order) => {
-    const message = `Order Update for ${order.customerName}:
-
-🛍️ Product: ${order.productName}
-📏 Size: ${order.size}
-💰 Price: ₹${order.price?.toLocaleString() || "N/A"}
-📱 Customer Phone: ${order.phoneNumber}
-📅 Order Date: ${new Date(order.createdAt!).toLocaleDateString()}
-📊 Status: ${order.status}
-
-Please let me know if you need any updates!`
-
-    const whatsappUrl = `https://wa.me/91${order.phoneNumber}?text=${encodeURIComponent(message)}`
-    window.open(whatsappUrl, "_blank")
+  const startEditOrder = (order: Order) => {
+    setEditingOrder(order)
+    setOrderForm({
+      size: order.size || "",
+      color: order.color || "",
+      status: order.status,
+    })
+    setIsOrderDialogOpen(true)
   }
 
-  const stats = {
-    totalProducts: products.length,
-    totalOrders: orders.length,
-    pendingOrders: orders.filter((o) => o.status === "Pending").length,
-    totalRevenue: orders.reduce((sum, order) => {
-      return sum + (order.price || 0)
-    }, 0),
-    featuredProducts: products.filter((p) => p.featured).length,
-    lowStockProducts: products.filter((p) => (p.stock || 0) < 10).length,
+  const handleEditOrder = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingOrder) return
+
+    try {
+      const response = await fetch(`/api/orders/${editingOrder._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          size: orderForm.size,
+          color: orderForm.color,
+          status: orderForm.status,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update order")
+      }
+
+      const updatedOrder = {
+        ...editingOrder,
+        size: orderForm.size,
+        color: orderForm.color,
+        status: orderForm.status,
+      }
+
+      setOrders(orders.map((order) => (order._id === editingOrder._id ? updatedOrder : order)))
+      setIsOrderDialogOpen(false)
+      setEditingOrder(null)
+
+      toast({
+        title: "Success",
+        description: "Order updated successfully!",
+      })
+    } catch (error) {
+      console.error("Error updating order:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update order",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const updateOrderStatus = async (orderId: string, status: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update order status")
+      }
+
+      setOrders(orders.map((order) => (order._id === orderId ? { ...order, status } : order)))
+
+      toast({
+        title: "Success",
+        description: `Order status updated to ${status}`,
+      })
+    } catch (error) {
+      console.error("Error updating order status:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update order status",
+        variant: "destructive",
+      })
+    }
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <form
-          onSubmit={handleLogin}
-          className="bg-white p-8 rounded shadow-md w-full max-w-sm space-y-4 border"
-        >
-          <h2 className="text-2xl font-bold mb-2 text-center">Admin Login</h2>
-          <div>
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              value={loginForm.username}
-              onChange={e => setLoginForm({ ...loginForm, username: e.target.value })}
-              autoComplete="username"
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={loginForm.password}
-              onChange={e => setLoginForm({ ...loginForm, password: e.target.value })}
-              autoComplete="current-password"
-              required
-            />
-          </div>
-          {loginError && <p className="text-red-600 text-sm">{loginError}</p>}
-          <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">Login</Button>
-          <div className="text-xs text-gray-500 text-center pt-2">
-            <div>Default Username: <b>admin</b></div>
-            <div>Default Password: <b>admin123</b></div>
-          </div>
-        </form>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center">Admin Login</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter username"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+              <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600">
+                Login
+              </Button>
+            </form>
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Demo Credentials:</strong>
+                <br />
+                Username: admin
+                <br />
+                Password: admin123
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Admin Dashboard...</h2>
-          <p className="text-gray-600">Please wait while we fetch your data</p>
-        </div>
-      </div>
-    )
-  }
+  const totalRevenue = orders
+    .filter((order) => order.status === "Delivered")
+    .reduce((sum, order) => sum + (order.price || 0), 0)
+
+  const pendingOrders = orders.filter((order) => order.status === "Pending").length
+  const lowStockProducts = products.filter((product) => (product.stock || 0) <= 5).length
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between h-auto md:h-16 gap-4 md:gap-0 py-2 md:py-0">
-            <div className="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
-              <Button variant="ghost" size="sm" asChild>
-                <a href="/" className="flex items-center gap-2">
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Store
-                </a>
-              </Button>
-              <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-            </div>
-            <div className="flex items-center gap-2 w-full md:w-auto justify-center md:justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  fetchProducts()
-                  fetchOrders()
-                }}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleLogout}
-              >
-                Logout
-              </Button>
-            </div>
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+            <Button onClick={handleLogout} variant="outline">
+              Logout
+            </Button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Package className="h-8 w-8 text-blue-100" />
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <TrendingUp className="h-6 w-6 text-green-600" />
+                </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-blue-100">Total Products</p>
-                  <p className="text-2xl font-bold">{stats.totalProducts}</p>
-                  {stats.featuredProducts > 0 && (
-                    <p className="text-xs text-blue-100">{stats.featuredProducts} featured</p>
-                  )}
+                  <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                  <p className="text-2xl font-bold text-gray-900">₹{totalRevenue.toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+          <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <ShoppingCart className="h-8 w-8 text-green-100" />
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <ShoppingCart className="h-6 w-6 text-blue-600" />
+                </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-green-100">Total Orders</p>
-                  <p className="text-2xl font-bold">{stats.totalOrders}</p>
-                  <p className="text-xs text-green-100">All time</p>
+                  <p className="text-sm font-medium text-gray-600">Total Orders</p>
+                  <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white">
+          <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Users className="h-8 w-8 text-yellow-100" />
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Users className="h-6 w-6 text-orange-600" />
+                </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-yellow-100">Pending Orders</p>
-                  <p className="text-2xl font-bold">{stats.pendingOrders}</p>
-                  <p className="text-xs text-yellow-100">Need attention</p>
+                  <p className="text-sm font-medium text-gray-600">Pending Orders</p>
+                  <p className="text-2xl font-bold text-gray-900">{pendingOrders}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+          <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <IndianRupee className="h-8 w-8 text-purple-100" />
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <Package className="h-6 w-6 text-red-600" />
+                </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-purple-100">Total Revenue</p>
-                  <p className="text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</p>
-                  <p className="text-xs text-purple-100">From all orders</p>
+                  <p className="text-sm font-medium text-gray-600">Low Stock</p>
+                  <p className="text-2xl font-bold text-gray-900">{lowStockProducts}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Low Stock Alert */}
-        {stats.lowStockProducts > 0 && (
-          <Card className="mb-6 border-orange-200 bg-orange-50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-orange-800">
-                <Package className="h-5 w-5" />
-                <span className="font-medium">
-                  {stats.lowStockProducts} product{stats.lowStockProducts > 1 ? "s" : ""} running low on stock (less
-                  than 10 items)
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
+        {/* Main Content */}
         <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="products" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Products ({stats.totalProducts})
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
-              Orders ({stats.totalOrders})
-            </TabsTrigger>
+          <TabsList>
+            <TabsTrigger value="products">Products Management</TabsTrigger>
+            <TabsTrigger value="orders">Orders Management</TabsTrigger>
           </TabsList>
 
           <TabsContent value="products">
             <Card>
               <CardHeader>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5" />
-                    Products Management
-                  </CardTitle>
-                  <Dialog open={isProductModalOpen} onOpenChange={setIsProductModalOpen}>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Products Management</CardTitle>
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button
-                        onClick={() => {
-                          resetProductForm()
-                          setEditingProduct(null)
-                        }}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
+                      <Button onClick={resetProductForm} className="bg-orange-500 hover:bg-orange-600">
                         <Plus className="h-4 w-4 mr-2" />
                         Add Product
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                          {editingProduct ? (
-                            <>
-                              <Edit className="h-5 w-5" />
-                              Edit Product
-                            </>
-                          ) : (
-                            <>
-                              <Plus className="h-5 w-5" />
-                              Add New Product
-                            </>
-                          )}
-                        </DialogTitle>
+                        <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
                       </DialogHeader>
-                      <form onSubmit={handleProductSubmit} className="space-y-4">
+                      <form onSubmit={editingProduct ? handleEditProduct : handleAddProduct} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="name">Product Name *</Label>
+                          <div>
+                            <Label htmlFor="name">Product Name</Label>
                             <Input
                               id="name"
                               value={productForm.name}
                               onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                              placeholder="Enter product name"
                               required
-                              disabled={isSubmitting}
                             />
                           </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="price">Price (₹) *</Label>
-                            <Input
-                              id="price"
-                              type="number"
-                              min="1"
-                              value={productForm.price || ""}
-                              onChange={(e) =>
-                                setProductForm({ ...productForm, price: Number.parseInt(e.target.value) || 0 })
-                              }
-                              placeholder="Enter price"
-                              required
-                              disabled={isSubmitting}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="description">Description *</Label>
-                          <Textarea
-                            id="description"
-                            value={productForm.description}
-                            onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                            placeholder="Enter product description"
-                            rows={3}
-                            required
-                            disabled={isSubmitting}
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="category">Category *</Label>
+                          <div>
+                            <Label htmlFor="category">Category</Label>
                             <Select
                               value={productForm.category}
-                              onValueChange={(value: Product["category"]) =>
-                                setProductForm({ ...productForm, category: value })
-                              }
-                              disabled={isSubmitting}
+                              onValueChange={(value) => setProductForm({ ...productForm, category: value })}
                             >
                               <SelectTrigger>
-                                <SelectValue />
+                                <SelectValue placeholder="Select category" />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="Men">Men</SelectItem>
@@ -558,105 +566,95 @@ Please let me know if you need any updates!`
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="space-y-2">
+                        </div>
+
+                        <div>
+                          <Label htmlFor="description">Description</Label>
+                          <Textarea
+                            id="description"
+                            value={productForm.description}
+                            onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                            required
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="price">Price (₹)</Label>
+                            <Input
+                              id="price"
+                              type="number"
+                              value={productForm.price}
+                              onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+                              required
+                            />
+                          </div>
+                          <div>
                             <Label htmlFor="stock">Stock Quantity</Label>
                             <Input
                               id="stock"
                               type="number"
-                              min="0"
-                              value={productForm.stock || ""}
-                              onChange={(e) =>
-                                setProductForm({ ...productForm, stock: Number.parseInt(e.target.value) || 0 })
-                              }
-                              placeholder="Enter stock quantity"
-                              disabled={isSubmitting}
+                              value={productForm.stock}
+                              onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })}
+                              required
                             />
                           </div>
                         </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="sizes">Size Options (comma-separated) *</Label>
-                          <Input
-                            id="sizes"
-                            value={productForm.sizeOptions.join(", ")}
-                            onChange={(e) =>
-                              setProductForm({
-                                ...productForm,
-                                sizeOptions: e.target.value.split(/,\s*/).filter(Boolean),
-                              })
-                            }
-                            placeholder="S, M, L, XL"
-                            required
-                            disabled={isSubmitting}
-                          />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="colors">Colors (comma separated)</Label>
+                            <Input
+                              id="colors"
+                              value={productForm.colors}
+                              onChange={(e) => setProductForm({ ...productForm, colors: e.target.value })}
+                              placeholder="Red, Blue, Green"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="sizes">Sizes (comma separated)</Label>
+                            <Input
+                              id="sizes"
+                              value={productForm.sizes}
+                              onChange={(e) => setProductForm({ ...productForm, sizes: e.target.value })}
+                              placeholder="S, M, L, XL"
+                            />
+                          </div>
                         </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="colors">Colors (comma-separated)</Label>
-                          <Input
-                            id="colors"
-                            value={productForm.colors.join(", ")}
-                            onChange={(e) =>
-                              setProductForm({
-                                ...productForm,
-                                colors: e.target.value.split(/,\s*/).filter(Boolean),
-                              })
-                            }
-                            placeholder="Black, White, Red"
-                            disabled={isSubmitting}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="images">Image URLs (comma-separated) *</Label>
+                        <div>
+                          <Label htmlFor="images">Image URLs (comma separated)</Label>
                           <Textarea
                             id="images"
-                            value={productForm.images.join(", ")}
-                            onChange={(e) =>
-                              setProductForm({
-                                ...productForm,
-                                images: e.target.value.split(/,\s*/).filter(Boolean),
-                              })
-                            }
+                            value={productForm.images}
+                            onChange={(e) => setProductForm({ ...productForm, images: e.target.value })}
                             placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
-                            rows={2}
-                            required
-                            disabled={isSubmitting}
                           />
                         </div>
 
                         <div className="flex items-center space-x-2">
-                          <Switch
+                          <input
+                            type="checkbox"
                             id="featured"
                             checked={productForm.featured}
-                            onCheckedChange={(checked) => setProductForm({ ...productForm, featured: checked })}
-                            disabled={isSubmitting}
+                            onChange={(e) => setProductForm({ ...productForm, featured: e.target.checked })}
                           />
-                          <Label htmlFor="featured" className="flex items-center gap-2">
-                            <Star className="h-4 w-4" />
-                            Featured Product
-                          </Label>
+                          <Label htmlFor="featured">Featured Product</Label>
                         </div>
 
-                        <div className="flex gap-2 pt-4">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setIsProductModalOpen(false)}
-                            className="flex-1"
-                            disabled={isSubmitting}
-                          >
+                        <div className="flex justify-end space-x-2">
+                          <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                             Cancel
                           </Button>
                           <Button
                             type="submit"
-                            className="flex-1 bg-blue-600 hover:bg-blue-700"
-                            disabled={isSubmitting}
+                            disabled={isAddingProduct}
+                            className="bg-orange-500 hover:bg-orange-600"
                           >
-                            {isSubmitting ? (
+                            {isAddingProduct ? (
                               <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                {editingProduct ? "Updating..." : "Creating..."}
+                                {editingProduct ? "Updating..." : "Adding..."}
                               </>
                             ) : (
                               <>{editingProduct ? "Update Product" : "Add Product"}</>
@@ -669,74 +667,72 @@ Please let me know if you need any updates!`
                 </div>
               </CardHeader>
               <CardContent>
-                {products.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
-                    <p className="text-gray-600 mb-4">Start by adding your first product to the store.</p>
-                    <Button
-                      onClick={() => {
-                        resetProductForm()
-                        setEditingProduct(null)
-                        setIsProductModalOpen(true)
-                      }}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Product
-                    </Button>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {products.map((product) => (
-                      <Card key={product._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                      <Card key={product._id} className="overflow-hidden">
                         <div className="aspect-square relative">
                           <img
-                            src={product.images[0] || "/placeholder.svg?height=200&width=200"}
+                            src={product.images?.[0] || "/placeholder.svg?height=200&width=200"}
                             alt={product.name}
                             className="w-full h-full object-cover"
                           />
-                          <div className="absolute top-2 left-2 flex gap-1">
-                            <Badge className="bg-black/80 text-white">{product.category}</Badge>
-                            {product.featured && (
-                              <Badge className="bg-yellow-500 text-white">
-                                <Star className="h-3 w-3 mr-1" />
-                                Featured
-                              </Badge>
-                            )}
-                          </div>
-                          {product.stock !== undefined && product.stock < 10 && (
-                            <Badge className="absolute top-2 right-2 bg-red-500 text-white">
-                              Low Stock: {product.stock}
-                            </Badge>
-                          )}
+                          {product.featured && <Badge className="absolute top-2 left-2 bg-orange-500">Featured</Badge>}
                         </div>
                         <CardContent className="p-4">
-                          <h3 className="font-semibold mb-2 line-clamp-2">{product.name}</h3>
-                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">{product.description}</p>
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="font-bold text-green-600 text-lg">₹{product.price.toLocaleString()}</span>
-                            <span className="text-sm text-gray-500">Stock: {product.stock || 0}</span>
-                          </div>
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex gap-1">
-                              {product.sizeOptions.slice(0, 3).map((size) => (
-                                <Badge key={size} variant="outline" className="text-xs">
-                                  {size}
-                                </Badge>
-                              ))}
-                              {product.sizeOptions.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{product.sizeOptions.length - 3}
-                                </Badge>
-                              )}
+                          <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{product.description}</p>
+
+                          <div className="space-y-2 mb-4">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium">Price:</span>
+                              <span className="text-lg font-bold text-orange-600">
+                                ₹{product.price.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium">Stock:</span>
+                              <Badge
+                                variant={
+                                  (product.stock || 0) <= 5
+                                    ? "destructive"
+                                    : (product.stock || 0) <= 20
+                                      ? "secondary"
+                                      : "default"
+                                }
+                              >
+                                {product.stock || 0} units
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium">Category:</span>
+                              <Badge variant="outline">{product.category}</Badge>
                             </div>
                           </div>
-                          <div className="flex gap-2">
+
+                          {product.colors && product.colors.length > 0 && (
+                            <div className="mb-2">
+                              <span className="text-sm font-medium">Colors: </span>
+                              <span className="text-sm text-gray-600">{product.colors.join(", ")}</span>
+                            </div>
+                          )}
+
+                          {product.sizeOptions && product.sizeOptions.length > 0 && (
+                            <div className="mb-4">
+                              <span className="text-sm font-medium">Sizes: </span>
+                              <span className="text-sm text-gray-600">{product.sizeOptions.join(", ")}</span>
+                            </div>
+                          )}
+
+                          <div className="flex space-x-2">
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => openEditProduct(product)}
+                              onClick={() => startEditProduct(product)}
                               className="flex-1"
                             >
                               <Edit className="h-4 w-4 mr-1" />
@@ -745,7 +741,7 @@ Please let me know if you need any updates!`
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => handleDeleteProduct(product._id!, product.name)}
+                              onClick={() => handleDeleteProduct(product._id)}
                               className="flex-1"
                             >
                               <Trash2 className="h-4 w-4 mr-1" />
@@ -764,94 +760,89 @@ Please let me know if you need any updates!`
           <TabsContent value="orders">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
-                  Orders Management
-                </CardTitle>
+                <CardTitle>Orders Management</CardTitle>
               </CardHeader>
               <CardContent>
-                {orders.length === 0 ? (
-                  <div className="text-center py-12">
-                    <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No orders yet</h3>
-                    <p className="text-gray-600">Orders will appear here when customers place them.</p>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {orders.map((order) => (
-                      <Card key={order._id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-4">
-                          <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
-                            {/* Image on top for mobile, left for desktop */}
-                            <div className="flex-shrink-0 flex justify-center sm:block">
-                              <img
-                                src={order.productImage || "/placeholder.svg?height=60&width=60"}
-                                alt={order.productName}
-                                className="w-24 h-24 sm:w-16 sm:h-16 object-cover rounded mb-2 sm:mb-0"
-                              />
+                      <Card key={order._id} className="p-4">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="space-y-1">
+                            <h3 className="font-semibold text-lg">{order.customerName}</h3>
+                            <p className="text-sm text-gray-600">📞 {order.phoneNumber}</p>
+                            {order.notes && <p className="text-sm text-gray-600">📍 {order.notes}</p>}
+                            <p className="text-xs text-gray-500">
+                              Order Date: {new Date(order.createdAt || Date.now()).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Badge
+                            variant={
+                              order.status === "Delivered"
+                                ? "default"
+                                : order.status === "Confirmed"
+                                  ? "secondary"
+                                  : order.status === "Cancelled"
+                                    ? "destructive"
+                                    : "outline"
+                            }
+                            className="text-sm"
+                          >
+                            {order.status}
+                          </Badge>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <h4 className="font-semibold text-lg text-orange-600 mb-2">{order.productName}</h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="font-medium">Product ID:</span>
+                                  <span className="text-gray-600">{order.productId}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="font-medium">Size:</span>
+                                  <span className="text-gray-600">{order.size || "N/A"}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="font-medium">Color:</span>
+                                  <span className="text-gray-600">{order.color || "N/A"}</span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex-1 flex flex-col gap-2">
-                              <h4 className="font-semibold text-base sm:text-lg">{order.productName}</h4>
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:text-sm text-gray-600">
-                                <div><strong>Size:</strong> {order.size}</div>
-                                <div><strong>Customer:</strong> {order.customerName}</div>
-                                <div><strong>Phone:</strong> {order.phoneNumber}</div>
-                                <div><strong>Price:</strong> ₹{order.price?.toLocaleString() || "N/A"}</div>
+                            <div className="flex flex-col justify-center">
+                              <div className="text-2xl font-bold text-green-600 mb-2">
+                                ₹{(order.price || 0).toLocaleString()}
                               </div>
-                              <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                                <Calendar className="h-3 w-3" />
-                                {new Date(order.createdAt!).toLocaleDateString("en-IN", {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </div>
-                            </div>
-                            {/* Actions: status and WhatsApp, stack on mobile */}
-                            <div className="flex flex-col gap-2 items-stretch sm:items-end w-full sm:w-auto mt-2 sm:mt-0">
-                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                <Select
-                                  value={order.status}
-                                  onValueChange={(value: Order["status"]) => handleUpdateOrderStatus(order._id!, value)}
-                                >
-                                  <SelectTrigger className="w-full sm:w-36 text-xs sm:text-sm">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Pending">Pending</SelectItem>
-                                    <SelectItem value="Confirmed">Confirmed</SelectItem>
-                                    <SelectItem value="Delivered">Delivered</SelectItem>
-                                    <SelectItem value="Cancelled">Cancelled</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <Badge
-                                  variant={
-                                    order.status === "Delivered"
-                                      ? "default"
-                                      : order.status === "Confirmed"
-                                        ? "secondary"
-                                        : order.status === "Cancelled"
-                                          ? "destructive"
-                                          : "outline"
-                                  }
-                                  className="min-w-[80px] justify-center text-xs sm:text-sm mt-1 sm:mt-0"
-                                >
-                                  {order.status}
-                                </Badge>
-                              </div>
-                              <Button
-                                size="sm"
-                                onClick={() => openWhatsApp(order)}
-                                className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
-                              >
-                                <MessageCircle className="h-4 w-4 mr-1" />
-                                WhatsApp
-                              </Button>
+                              <div className="text-sm text-gray-600">Order ID: {order._id?.slice(-8)}</div>
                             </div>
                           </div>
-                        </CardContent>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 justify-between items-center">
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => startEditOrder(order)}>
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit Details
+                            </Button>
+                          </div>
+                          <Select value={order.status} onValueChange={(value) => updateOrderStatus(order._id!, value)}>
+                            <SelectTrigger className="w-40">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Pending">Pending</SelectItem>
+                              <SelectItem value="Confirmed">Confirmed</SelectItem>
+                              <SelectItem value="Delivered">Delivered</SelectItem>
+                              <SelectItem value="Cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </Card>
                     ))}
                   </div>
@@ -860,6 +851,72 @@ Please let me know if you need any updates!`
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Order Edit Dialog */}
+        <Dialog open={isOrderDialogOpen} onOpenChange={setIsOrderDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Order Details</DialogTitle>
+            </DialogHeader>
+            {editingOrder && (
+              <form onSubmit={handleEditOrder} className="space-y-4">
+                <div>
+                  <Label>Product Name</Label>
+                  <Input value={editingOrder.productName} disabled />
+                </div>
+                <div>
+                  <Label>Customer Name</Label>
+                  <Input value={editingOrder.customerName} disabled />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="orderSize">Size</Label>
+                    <Input
+                      id="orderSize"
+                      value={orderForm.size}
+                      onChange={(e) => setOrderForm({ ...orderForm, size: e.target.value })}
+                      placeholder="Enter size"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="orderColor">Color</Label>
+                    <Input
+                      id="orderColor"
+                      value={orderForm.color}
+                      onChange={(e) => setOrderForm({ ...orderForm, color: e.target.value })}
+                      placeholder="Enter color"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="orderStatus">Status</Label>
+                  <Select
+                    value={orderForm.status}
+                    onValueChange={(value) => setOrderForm({ ...orderForm, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="Confirmed">Confirmed</SelectItem>
+                      <SelectItem value="Delivered">Delivered</SelectItem>
+                      <SelectItem value="Cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setIsOrderDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="bg-orange-500 hover:bg-orange-600">
+                    Update Order
+                  </Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

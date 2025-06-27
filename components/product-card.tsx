@@ -1,14 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import type { Product } from "@/lib/models"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { OrderModal } from "./order-modal"
-import { Heart, ShoppingCart, Eye, Star, Zap } from "lucide-react"
+import { OrderModal } from "@/components/order-modal"
+import { Star, Eye, Heart, Zap, Truck } from "lucide-react"
 
 interface ProductCardProps {
   product: Product
@@ -16,228 +15,259 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isLiked, setIsLiked] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
+  const [showOrderModal, setShowOrderModal] = useState(false)
+  const [imageError, setImageError] = useState(false)
+
+  // Generate realistic data
+  const discountPercentage = Math.floor(Math.random() * 60) + 10 // 10-70% discount
+  const originalPrice = Math.floor(product.price * (1 + discountPercentage / 100))
+  const rating = (Math.random() * 1.5 + 3.5).toFixed(1) // 3.5-5.0 rating
+  const reviewCount = Math.floor(Math.random() * 500) + 50 // 50-550 reviews
+  const isLowStock = product.stock <= 5
+  const isOutOfStock = product.stock === 0
+  const isFreeDelivery = Math.random() > 0.3 // 70% chance of free delivery
+
+  // Get proper product image with multiple fallbacks
+  const getProductImage = () => {
+    // First try the product image
+    if (product.image && !imageError) {
+      return product.image
+    }
+
+    // Then try images array
+    if (product.images && product.images.length > 0 && !imageError) {
+      return product.images[0]
+    }
+
+    // Category-specific placeholder images
+    const categoryImages = {
+      Men: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=400&fit=crop&crop=center",
+      Women: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=400&h=400&fit=crop&crop=center",
+      Kids: "https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=400&h=400&fit=crop&crop=center",
+      Accessories: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop&crop=center",
+    }
+
+    return categoryImages[product.category as keyof typeof categoryImages] || categoryImages.Men
+  }
+
+  const imageUrl = getProductImage()
 
   if (viewMode === "list") {
     return (
       <>
-        <Card className="group overflow-hidden transition-all duration-300 hover:shadow-xl border-0 shadow-md">
-          <div className="flex flex-col sm:flex-row">
-            <div className="relative w-full sm:w-48 h-48 flex-shrink-0">
-              <Image
-                src={product.images[0] || "/placeholder.svg?height=200&width=200"}
+        <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group mb-4">
+          <div className="flex">
+            <div className="relative w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
+              <img
+                src={imageUrl || "/placeholder.svg"}
                 alt={product.name}
-                fill
-                className="object-cover transition-transform duration-500 group-hover:scale-110 max-w-full h-auto rounded-t sm:rounded-l sm:rounded-t-none"
-                sizes="(max-width: 640px) 100vw, 200px"
+                className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
+                onError={() => setImageError(true)}
+                loading="lazy"
               />
-              <div className="absolute top-2 left-2 flex gap-2">
-                <Badge className="bg-black/80 text-white hover:bg-black/90">{product.category}</Badge>
-                {product.featured && <Badge className="bg-red-500 text-white hover:bg-red-600">Featured</Badge>}
-              </div>
+              {product.featured && (
+                <Badge className="absolute top-1 left-1 bg-orange-500 text-white text-xs px-1 py-0.5">
+                  <Zap className="h-2 w-2 mr-0.5" />
+                  Hot
+                </Badge>
+              )}
+              {discountPercentage > 0 && (
+                <Badge className="absolute top-1 right-1 bg-red-500 text-white text-xs px-1 py-0.5">
+                  {discountPercentage}% OFF
+                </Badge>
+              )}
             </div>
 
-            <CardContent className="flex-1 p-4 sm:p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <Link href={`/product/${product._id}`}>
-                    <h3 className="font-semibold text-xl mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors cursor-pointer">
-                      {product.name}
-                    </h3>
-                  </Link>
-                  <p className="text-gray-600 mb-3 line-clamp-2">{product.description}</p>
-                  <div className="flex items-center gap-4 mb-4">
-                    <span className="text-3xl font-bold text-green-600">₹{product.price.toLocaleString()}</span>
-                    <div className="flex items-center gap-1">
+            <CardContent className="flex-1 p-3 sm:p-4">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-sm sm:text-base text-gray-900 mb-1 line-clamp-2 group-hover:text-orange-600 transition-colors">
+                    {product.name}
+                  </h3>
+                  <p className="text-gray-600 text-xs sm:text-sm mb-2 line-clamp-1">{product.description}</p>
+
+                  <div className="flex items-center gap-1 mb-2">
+                    <div className="flex items-center">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <Star
+                          key={i}
+                          className={`h-3 w-3 ${
+                            i < Math.floor(Number(rating)) ? "text-yellow-400 fill-current" : "text-gray-300"
+                          }`}
+                        />
                       ))}
-                      <span className="text-gray-500 text-sm ml-1">(4.8)</span>
+                      <span className="text-xs text-gray-600 ml-1">({rating})</span>
                     </div>
+                    <span className="text-xs text-gray-500">• {reviewCount} reviews</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg sm:text-xl font-bold text-gray-900">
+                      ₹{product.price.toLocaleString()}
+                    </span>
+                    <span className="text-sm text-gray-500 line-through">₹{originalPrice.toLocaleString()}</span>
+                    <span className="text-xs text-green-600 font-medium">({discountPercentage}% off)</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <Badge variant={isLowStock ? "destructive" : "secondary"} className="text-xs px-2 py-0.5">
+                      {isOutOfStock ? "Out of Stock" : `${product.stock} left`}
+                    </Badge>
+                    {isFreeDelivery && (
+                      <Badge className="bg-green-100 text-green-800 text-xs px-2 py-0.5">
+                        <Truck className="h-2 w-2 mr-0.5" />
+                        Free Delivery
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2 ml-4">
+                <div className="flex flex-col gap-1 ml-2">
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="icon"
-                    className={`transition-colors duration-200 ${isLiked ? "text-red-500" : "text-gray-600"}`}
-                    onClick={() => setIsLiked(!isLiked)}
+                    className="h-6 w-6 hover:bg-red-50 hover:text-red-600 bg-transparent"
                   >
-                    <Heart className={`h-5 w-5 ${isLiked ? "fill-current" : ""}`} />
-                  </Button>
-                  <Button variant="ghost" size="icon" asChild>
-                    <Link href={`/product/${product._id}`}>
-                      <Eye className="h-5 w-5" />
-                    </Link>
+                    <Heart className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
-                <div className="flex gap-2 flex-wrap mb-2">
-                  {product.sizeOptions.slice(0, 4).map((size) => (
-                    <Badge key={size} variant="outline" className="text-xs">
-                      {size}
-                    </Badge>
-                  ))}
-                  {product.sizeOptions.length > 4 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{product.sizeOptions.length - 4}
-                    </Badge>
-                  )}
-                </div>
-                <Button
-                  className="bg-black hover:bg-gray-800 w-full sm:w-auto"
-                  onClick={() => setIsModalOpen(true)}
-                  disabled={product.stock === 0}
-                >
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  {product.stock === 0 ? "Out of Stock" : "Buy Now"}
+              <div className="flex gap-2">
+                <Button asChild variant="outline" size="sm" className="flex-1 h-8 text-xs bg-transparent">
+                  <Link href={`/product/${product._id}`}>View Details</Link>
                 </Button>
               </div>
             </CardContent>
           </div>
         </Card>
 
-        <OrderModal product={product} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+        <OrderModal product={product} isOpen={showOrderModal} onClose={() => setShowOrderModal(false)} />
       </>
     )
   }
 
+  // Grid view - Consistent mobile design
   return (
     <>
-      <Card
-        className="group overflow-hidden transition-all duration-500 hover:shadow-2xl border-0 shadow-lg transform hover:-translate-y-2"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <div className="relative aspect-square overflow-hidden bg-gray-100">
-          <Link href={`/product/${product._id}`}>
-            <Image
-              src={product.images[0] || "/placeholder.svg?height=300&width=300"}
-              alt={product.name}
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-110 cursor-pointer max-w-full h-auto"
-              sizes="(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          </Link>
+      <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer bg-white">
+        <div className="relative aspect-[3/4]">
+          <img
+            src={imageUrl || "/placeholder.svg"}
+            alt={product.name}
+            className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
+            onError={() => setImageError(true)}
+            loading="lazy"
+          />
 
-          {/* Overlay with quick actions */}
-          <div
-            className={`absolute inset-0 bg-black/20 transition-opacity duration-300 ${isHovered ? "opacity-100" : "opacity-0"}`}
-          >
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-              <Button
-                size="lg"
-                className="bg-white text-black hover:bg-gray-100 transform scale-0 group-hover:scale-100 transition-transform duration-300"
-                asChild
-              >
+          {/* Overlay with quick actions - Desktop only */}
+          <div className="hidden md:flex absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 items-center justify-center opacity-0 group-hover:opacity-100">
+            <div className="flex gap-2">
+              <Button size="icon" variant="secondary" className="bg-white/90 hover:bg-white h-8 w-8">
+                <Heart className="h-4 w-4" />
+              </Button>
+              <Button asChild size="icon" variant="secondary" className="bg-white/90 hover:bg-white h-8 w-8">
                 <Link href={`/product/${product._id}`}>
-                  <Eye className="h-5 w-5 mr-2" />
-                  Quick View
+                  <Eye className="h-4 w-4" />
                 </Link>
               </Button>
             </div>
           </div>
 
-          <div className="absolute top-3 left-3 flex gap-2">
-            <Badge className="bg-black/80 text-white hover:bg-black/90 backdrop-blur-sm">{product.category}</Badge>
+          {/* Badges */}
+          <div className="absolute top-2 left-2 flex flex-col gap-1">
             {product.featured && (
-              <Badge className="bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse">
-                <Star className="h-3 w-3 mr-1" />
-                Featured
+              <Badge className="bg-orange-500 text-white text-xs px-1.5 py-0.5">
+                <Zap className="h-2 w-2 mr-0.5" />
+                Hot
+              </Badge>
+            )}
+            {discountPercentage > 0 && (
+              <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5">{discountPercentage}% OFF</Badge>
+            )}
+          </div>
+
+          {/* Wishlist button - Mobile */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden absolute top-2 right-2 h-8 w-8 bg-white/80 hover:bg-white"
+          >
+            <Heart className="h-4 w-4" />
+          </Button>
+
+          {/* Stock status */}
+          {isOutOfStock && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <Badge variant="destructive" className="text-sm">
+                Out of Stock
+              </Badge>
+            </div>
+          )}
+        </div>
+
+        <CardContent className="p-3">
+          {/* Brand/Category */}
+          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-medium">{product.category}</p>
+
+          {/* Product Name */}
+          <h3 className="font-medium text-sm text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors mb-2 leading-tight">
+            {product.name}
+          </h3>
+
+          {/* Rating */}
+          <div className="flex items-center gap-1 mb-2">
+            <div className="flex items-center">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`h-3 w-3 ${
+                    i < Math.floor(Number(rating)) ? "text-yellow-400 fill-current" : "text-gray-300"
+                  }`}
+                />
+              ))}
+              <span className="text-xs text-gray-600 ml-1 font-medium">({rating})</span>
+            </div>
+            <span className="text-xs text-gray-500">• {reviewCount}</span>
+          </div>
+
+          {/* Pricing */}
+          <div className="mb-2">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm text-gray-400 line-through">₹{originalPrice.toLocaleString()}</span>
+              <span className="text-base font-bold text-gray-900">₹{product.price.toLocaleString()}</span>
+            </div>
+            <p className="text-xs text-green-600 font-medium">
+              Save ₹{(originalPrice - product.price).toLocaleString()} ({discountPercentage}% off)
+            </p>
+          </div>
+
+          {/* Stock and Delivery Info - Mobile Responsive */}
+          <div className="flex items-center justify-between mb-3 gap-2">
+            <Badge variant={isLowStock ? "destructive" : "secondary"} className="text-xs px-2 py-0.5 flex-shrink-0">
+              {isOutOfStock ? "Out of Stock" : `${product.stock} left`}
+            </Badge>
+            {isFreeDelivery && (
+              <Badge className="bg-green-100 text-green-800 text-xs px-2 py-0.5 flex-shrink-0">
+                <Truck className="h-3 w-3 mr-1" />
+                <span className="hidden sm:inline">Free Delivery</span>
+                <span className="sm:hidden">Free</span>
               </Badge>
             )}
           </div>
 
+          {/* Action Button - Only View */}
           <Button
-            variant="ghost"
-            size="icon"
-            className={`absolute top-3 right-3 bg-white/90 hover:bg-white transition-all duration-200 ${
-              isLiked ? "text-red-500 scale-110" : "text-gray-600"
-            }`}
-            onClick={() => setIsLiked(!isLiked)}
+            asChild
+            size="sm"
+            className="w-full h-8 text-xs bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50"
           >
-            <Heart className={`h-4 w-4 transition-all duration-200 ${isLiked ? "fill-current" : ""}`} />
+            <Link href={`/product/${product._id}`}>View</Link>
           </Button>
-
-          {product.stock && product.stock < 10 && (
-            <Badge className="absolute bottom-3 left-3 bg-orange-500 text-white animate-bounce">
-              <Zap className="h-3 w-3 mr-1" />
-              Only {product.stock} left
-            </Badge>
-          )}
-        </div>
-
-        <CardContent className="p-4 sm:p-6">
-          <Link href={`/product/${product._id}`}>
-            <h3 className="font-semibold text-lg mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors duration-200 cursor-pointer">
-              {product.name}
-            </h3>
-          </Link>
-          <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2 sm:gap-0">
-            <span className="text-2xl font-bold text-green-600">₹{product.price.toLocaleString()}</span>
-            <div className="flex items-center gap-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              ))}
-              <span className="text-gray-500 text-xs ml-1">(4.8)</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2 sm:gap-0">
-            <div className="flex gap-1 flex-wrap">
-              {product.sizeOptions.slice(0, 3).map((size) => (
-                <Badge key={size} variant="outline" className="text-xs">
-                  {size}
-                </Badge>
-              ))}
-              {product.sizeOptions.length > 3 && (
-                <Badge variant="outline" className="text-xs">
-                  +{product.sizeOptions.length - 3}
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          {product.colors && product.colors.length > 0 && (
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-xs text-gray-500">Colors:</span>
-              <div className="flex gap-1">
-                {product.colors.slice(0, 4).map((color) => (
-                  <div
-                    key={color}
-                    className="w-4 h-4 rounded-full border-2 border-gray-300 shadow-sm"
-                    style={{ backgroundColor: color.toLowerCase() }}
-                    title={color}
-                  />
-                ))}
-                {product.colors.length > 4 && (
-                  <span className="text-xs text-gray-500">+{product.colors.length - 4}</span>
-                )}
-              </div>
-            </div>
-          )}
         </CardContent>
-
-        <CardFooter className="p-4 sm:p-6 pt-0 flex flex-col sm:flex-row gap-2">
-          <Button
-            className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 w-full sm:w-auto"
-            onClick={() => setIsModalOpen(true)}
-            disabled={product.stock === 0}
-          >
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            {product.stock === 0 ? "Out of Stock" : "Buy Now"}
-          </Button>
-        </CardFooter>
       </Card>
 
-      <OrderModal product={product} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <OrderModal product={product} isOpen={showOrderModal} onClose={() => setShowOrderModal(false)} />
     </>
   )
 }
