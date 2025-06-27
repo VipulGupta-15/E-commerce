@@ -1,99 +1,123 @@
 import { NextResponse } from "next/server"
 import { getDatabase } from "@/lib/mongodb"
+import { ObjectId } from "mongodb"
 
 const sampleProducts = [
   {
-    name: "Classic White T-Shirt",
-    description:
-      "Premium cotton t-shirt with a comfortable fit. Perfect for everyday wear. Made from 100% organic cotton.",
+    name: "Classic Cotton T-Shirt",
+    description: "Comfortable and breathable cotton t-shirt perfect for everyday wear. Made from 100% premium cotton.",
+    price: 899,
     category: "Men",
-    sizeOptions: ["S", "M", "L", "XL", "XXL"],
-    price: 599,
-    images: ["https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop"],
-    colors: ["White", "Black", "Gray"],
     stock: 50,
+    colors: ["White", "Black", "Navy", "Gray"],
+    sizeOptions: ["S", "M", "L", "XL", "XXL"],
+    images: [
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=500&h=500&fit=crop",
+    ],
+    featured: true,
+  },
+  {
+    name: "Elegant Summer Dress",
+    description:
+      "Beautiful floral summer dress made from lightweight fabric. Perfect for casual outings and special occasions.",
+    price: 1599,
+    category: "Women",
+    stock: 30,
+    colors: ["Floral Blue", "Floral Pink", "Solid Black"],
+    sizeOptions: ["XS", "S", "M", "L", "XL"],
+    images: [
+      "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=500&h=500&fit=crop",
+    ],
+    featured: true,
+  },
+  {
+    name: "Kids Colorful Hoodie",
+    description: "Warm and cozy hoodie for kids with fun colorful design. Made from soft cotton blend material.",
+    price: 1299,
+    category: "Kids",
+    stock: 25,
+    colors: ["Rainbow", "Blue", "Pink", "Green"],
+    sizeOptions: ["2-3Y", "4-5Y", "6-7Y", "8-9Y", "10-11Y"],
+    images: [
+      "https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=500&h=500&fit=crop",
+    ],
+    featured: false,
+  },
+  {
+    name: "Leather Crossbody Bag",
+    description:
+      "Premium leather crossbody bag with adjustable strap. Perfect for daily use with multiple compartments.",
+    price: 2499,
+    category: "Accessories",
+    stock: 15,
+    colors: ["Brown", "Black", "Tan"],
+    sizeOptions: ["One Size"],
+    images: [
+      "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=500&h=500&fit=crop",
+    ],
+    featured: false,
+  },
+  {
+    name: "Running Sneakers",
+    description:
+      "Comfortable running sneakers with excellent cushioning and breathable mesh upper. Perfect for workouts.",
+    price: 3499,
+    category: "Footwear",
+    stock: 40,
+    colors: ["White/Blue", "Black/Red", "Gray/Orange"],
+    sizeOptions: ["6", "7", "8", "9", "10", "11", "12"],
+    images: [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=500&h=500&fit=crop",
+    ],
     featured: true,
   },
   {
     name: "Denim Jacket",
-    description:
-      "Stylish denim jacket with a modern cut. Great for layering. Features classic button closure and chest pockets.",
-    category: "Women",
-    sizeOptions: ["XS", "S", "M", "L", "XL"],
-    price: 2499,
-    images: ["https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?w=400&h=400&fit=crop"],
-    colors: ["Blue", "Black"],
-    stock: 30,
-    featured: true,
-  },
-  {
-    name: "Kids Cartoon T-Shirt",
-    description: "Fun and colorful t-shirt with cartoon prints. Soft and comfortable for kids. Machine washable.",
-    category: "Kids",
-    sizeOptions: ["2-3Y", "4-5Y", "6-7Y", "8-9Y", "10-11Y"],
-    price: 399,
-    images: ["https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=400&h=400&fit=crop"],
-    colors: ["Red", "Blue", "Yellow"],
-    stock: 40,
-    featured: false,
-  },
-  {
-    name: "Leather Handbag",
-    description:
-      "Elegant leather handbag with multiple compartments. Perfect for work or casual outings. Genuine leather construction.",
-    category: "Accessories",
-    sizeOptions: ["One Size"],
-    price: 3999,
-    images: ["https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop"],
-    colors: ["Brown", "Black", "Tan"],
+    description: "Classic denim jacket with vintage wash. A timeless piece that goes with everything in your wardrobe.",
+    price: 2199,
+    category: "Men",
     stock: 20,
-    featured: true,
-  },
-  {
-    name: "Formal Shirt",
-    description: "Professional formal shirt with a crisp finish. Ideal for office wear. Non-iron fabric for easy care.",
-    category: "Men",
-    sizeOptions: ["S", "M", "L", "XL", "XXL"],
-    price: 1299,
-    images: ["https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&h=400&fit=crop"],
-    colors: ["White", "Blue", "Light Blue"],
-    stock: 35,
+    colors: ["Light Blue", "Dark Blue", "Black"],
+    sizeOptions: ["S", "M", "L", "XL"],
+    images: [
+      "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?w=500&h=500&fit=crop",
+    ],
     featured: false,
   },
   {
-    name: "Summer Dress",
+    name: "Silk Scarf",
     description:
-      "Light and breezy summer dress with floral patterns. Perfect for warm weather. Comfortable fit with adjustable straps.",
-    category: "Women",
-    sizeOptions: ["XS", "S", "M", "L", "XL"],
+      "Luxurious silk scarf with beautiful patterns. Add elegance to any outfit with this versatile accessory.",
     price: 1899,
-    images: ["https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400&h=400&fit=crop"],
-    colors: ["Pink", "Yellow", "White"],
-    stock: 25,
-    featured: false,
-  },
-  {
-    name: "Sneakers",
-    description: "Comfortable running sneakers with excellent cushioning. Perfect for daily workouts and casual wear.",
     category: "Accessories",
-    sizeOptions: ["6", "7", "8", "9", "10", "11"],
-    price: 2799,
-    images: ["https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=400&fit=crop"],
-    colors: ["White", "Black", "Red"],
-    stock: 45,
-    featured: true,
+    stock: 35,
+    colors: ["Floral", "Geometric", "Abstract"],
+    sizeOptions: ["One Size"],
+    images: [
+      "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1590736969955-71cc94901144?w=500&h=500&fit=crop",
+    ],
+    featured: false,
   },
   {
-    name: "Hoodie",
-    description:
-      "Cozy hoodie with soft fleece lining. Perfect for cold weather. Features kangaroo pocket and adjustable hood.",
-    category: "Men",
-    sizeOptions: ["S", "M", "L", "XL", "XXL"],
-    price: 1799,
-    images: ["https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400&h=400&fit=crop"],
-    colors: ["Gray", "Black", "Navy"],
-    stock: 30,
-    featured: false,
+    name: "Yoga Leggings",
+    description: "High-waisted yoga leggings with moisture-wicking fabric. Perfect for workouts and casual wear.",
+    price: 1399,
+    category: "Women",
+    stock: 45,
+    colors: ["Black", "Navy", "Purple", "Gray"],
+    sizeOptions: ["XS", "S", "M", "L", "XL"],
+    images: [
+      "https://images.unsplash.com/photo-1506629905607-d9c297d3f5f5?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?w=500&h=500&fit=crop",
+    ],
+    featured: true,
   },
 ]
 
@@ -105,27 +129,47 @@ export async function POST() {
     const existingProducts = await db.collection("products").countDocuments()
 
     if (existingProducts > 0) {
-      return NextResponse.json({ message: "Products already seeded" }, { status: 200 })
+      return NextResponse.json({
+        message: "Products already exist in database",
+        count: existingProducts,
+      })
     }
 
-    // Insert sample products
-    const result = await db.collection("products").insertMany(
-      sampleProducts.map((product) => ({
-        ...product,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })),
-    )
+    // Add timestamps and IDs to products
+    const productsWithTimestamps = sampleProducts.map((product) => ({
+      _id: new ObjectId(),
+      ...product,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }))
 
-    return NextResponse.json(
-      {
-        message: "Database seeded successfully",
-        insertedCount: result.insertedCount,
-      },
-      { status: 201 },
-    )
+    // Insert products
+    const result = await db.collection("products").insertMany(productsWithTimestamps)
+
+    return NextResponse.json({
+      message: "Sample products added successfully!",
+      insertedCount: result.insertedCount,
+      products: productsWithTimestamps,
+    })
   } catch (error) {
     console.error("Error seeding database:", error)
     return NextResponse.json({ error: "Failed to seed database" }, { status: 500 })
+  }
+}
+
+export async function GET() {
+  try {
+    const db = await getDatabase()
+    const productCount = await db.collection("products").countDocuments()
+    const orderCount = await db.collection("orders").countDocuments()
+
+    return NextResponse.json({
+      message: "Database status",
+      products: productCount,
+      orders: orderCount,
+    })
+  } catch (error) {
+    console.error("Error checking database:", error)
+    return NextResponse.json({ error: "Failed to check database" }, { status: 500 })
   }
 }

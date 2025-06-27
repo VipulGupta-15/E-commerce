@@ -1,55 +1,51 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getDatabase } from "@/lib/mongodb"
-import type { Order } from "@/lib/models"
+import { ObjectId } from "mongodb"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const db = await getDatabase()
-    const searchParams = request.nextUrl.searchParams
-
-    const filter: any = {}
-
-    if (searchParams.get("status")) {
-      filter.status = searchParams.get("status")
-    }
-
-    const orders = await db.collection("orders").find(filter).sort({ createdAt: -1 }).toArray()
+    const orders = await db.collection("orders").find({}).sort({ createdAt: -1 }).toArray()
 
     return NextResponse.json(orders)
   } catch (error) {
     console.error("Error fetching orders:", error)
-    return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const db = await getDatabase()
-    const order: Order = await request.json()
+    const orderData = await request.json()
 
     // Validate required fields
-    if (!order.productId || !order.customerName || !order.phoneNumber || !order.size) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-    }
-
-    // Validate phone number format
-    const phoneRegex = /^[6-9]\d{9}$/
-    if (!phoneRegex.test(order.phoneNumber)) {
-      return NextResponse.json({ error: "Invalid phone number format" }, { status: 400 })
+    if (!orderData.customerName || !orderData.productId || !orderData.productName) {
+      return NextResponse.json(
+        { error: "Missing required fields: customerName, productId, productName" },
+        { status: 400 },
+      )
     }
 
     const newOrder = {
-      ...order,
-      status: "Pending" as const,
+      ...orderData,
+      _id: new ObjectId(),
       createdAt: new Date(),
       updatedAt: new Date(),
+      status: orderData.status || "Pending",
+      quantity: orderData.quantity || 1,
+      totalAmount: orderData.totalAmount || orderData.price || 0,
     }
 
     const result = await db.collection("orders").insertOne(newOrder)
 
-    return NextResponse.json({ _id: result.insertedId, ...newOrder }, { status: 201 })
+    if (!result.acknowledged) {
+      throw new Error("Failed to insert order")
+    }
+
+    return NextResponse.json(newOrder, { status: 201 })
   } catch (error) {
     console.error("Error creating order:", error)
-    return NextResponse.json({ error: "Failed to create order" }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
