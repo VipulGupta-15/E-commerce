@@ -8,9 +8,10 @@ import type { Product, FilterOptions } from "@/lib/models"
 import { ProductCard } from "@/components/product-card"
 import { ProductFilters } from "@/components/product-filters"
 import { BannerCarousel } from "@/components/banner-carousel"
+import { SearchSuggestions } from "@/components/search-suggestions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { toast } from "@/hooks/use-toast"
 import {
   Loader2,
@@ -39,6 +40,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showCategorySelector, setShowCategorySelector] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
   const categories = useMemo(
     () => [
@@ -124,6 +126,7 @@ export default function HomePage() {
       setFilters(newFilters)
       fetchProducts(newFilters)
       setShowSearch(false)
+      setShowSuggestions(false)
     },
     [filters, searchQuery, fetchProducts],
   )
@@ -134,7 +137,29 @@ export default function HomePage() {
     delete newFilters.search
     setFilters(newFilters)
     fetchProducts(newFilters)
+    setShowSuggestions(false)
   }, [filters, fetchProducts])
+
+  const handleSuggestionClick = useCallback((suggestion: string) => {
+    setSearchQuery(suggestion)
+    const newFilters = { ...filters, search: suggestion }
+    setFilters(newFilters)
+    fetchProducts(newFilters)
+    setShowSuggestions(false)
+    setShowSearch(false)
+  }, [filters, fetchProducts])
+
+  const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchQuery(value)
+    setShowSuggestions(value.length >= 2)
+  }, [])
+
+  const handleSearchInputFocus = useCallback(() => {
+    if (searchQuery.length >= 2) {
+      setShowSuggestions(true)
+    }
+  }, [searchQuery])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -148,58 +173,54 @@ export default function HomePage() {
                 <Sheet>
                   <SheetTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Menu className="h-5 w-5" />
+                      <Menu className="h-4 w-4" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left" className="w-80 p-0">
-                    <div className="p-6">
-                      <div className="flex items-center gap-3 mb-8">
-                        <div className="bg-gradient-to-r from-orange-500 to-pink-500 p-2 rounded-xl">
-                          <ShoppingBag className="h-6 w-6 text-white" />
+                  <SheetContent side="left" className="w-80">
+                    <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-6">
+                        <div className="bg-gradient-to-r from-orange-500 to-pink-500 p-1.5 rounded-lg">
+                          <ShoppingBag className="h-5 w-5 text-white" />
                         </div>
-                        <div>
-                          <h2 className="text-xl font-bold bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-                            StyleHub
-                          </h2>
-                          <p className="text-sm text-gray-500">Fashion for Everyone</p>
-                        </div>
+                        <h2 className="text-lg font-bold">StyleHub</h2>
                       </div>
-
                       <nav className="space-y-2">
-                        <div className="mb-6">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-4">Shop by Category</h3>
-                          <div className="space-y-1">
-                            {categories.map((category) => (
-                              <Link
-                                key={category.name}
-                                href={category.href}
-                                className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group"
-                              >
-                                <div
-                                  className={`w-10 h-10 rounded-lg bg-gradient-to-r ${category.color} flex items-center justify-center text-white text-lg group-hover:scale-110 transition-transform`}
-                                >
-                                  {category.icon}
-                                </div>
-                                <div>
-                                  <span className="font-medium text-gray-900">{category.name}</span>
-                                  <p className="text-xs text-gray-500">Latest trends</p>
-                                </div>
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="border-t pt-4">
-                          <Link
-                            href="/admin"
-                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors"
-                          >
-                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                              <User className="h-5 w-5 text-gray-600" />
-                            </div>
-                            <span className="font-medium text-gray-900">Admin Panel</span>
-                          </Link>
-                        </div>
+                        <Link
+                          href="/"
+                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <ShoppingBag className="h-4 w-4" />
+                          <span>All Products</span>
+                        </Link>
+                        <Link
+                          href="/category/women"
+                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <span className="text-lg">👗</span>
+                          <span>Women</span>
+                        </Link>
+                        <Link
+                          href="/category/men"
+                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <span className="text-lg">👔</span>
+                          <span>Men</span>
+                        </Link>
+                        <Link
+                          href="/category/kids"
+                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <span className="text-lg">🧸</span>
+                          <span>Kids</span>
+                        </Link>
+                        <Link
+                          href="/category/accessories"
+                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <span className="text-lg">👜</span>
+                          <span>Accessories</span>
+                        </Link>
                       </nav>
                     </div>
                   </SheetContent>
@@ -239,7 +260,8 @@ export default function HomePage() {
                       type="text"
                       placeholder="Search for products, brands and more"
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={handleSearchInputChange}
+                      onFocus={handleSearchInputFocus}
                       className="pl-10 pr-8 h-10"
                     />
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -254,6 +276,13 @@ export default function HomePage() {
                         <X className="h-4 w-4" />
                       </Button>
                     )}
+                    {showSuggestions && (
+                      <SearchSuggestions
+                        query={searchQuery}
+                        onSuggestionClick={handleSuggestionClick}
+                        onClose={() => setShowSuggestions(false)}
+                      />
+                    )}
                   </div>
                   <Button type="submit" size="icon" className="bg-orange-500 hover:bg-orange-600 h-10 w-10">
                     <Search className="h-4 w-4" />
@@ -263,40 +292,99 @@ export default function HomePage() {
             )}
 
             {/* Add Sample Products Button - Mobile */}
-            {products.length === 0 && !isLoading && (
-              <Button
-                onClick={seedDatabase}
-                disabled={isSeeding}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white mt-3"
-              >
-                {isSeeding ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Adding Products...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Add Sample Products
-                  </>
-                )}
-              </Button>
+            {!filters.search && (
+              <div className="mt-3">
+                <Button
+                  onClick={seedDatabase}
+                  disabled={isSeeding}
+                  size="sm"
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  {isSeeding ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Adding Products...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Add Sample Products
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
           </div>
 
           {/* Desktop Header */}
           <div className="hidden md:flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="bg-gradient-to-r from-orange-500 to-pink-500 p-2 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                <ShoppingBag className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-                  StyleHub
-                </h1>
-                <p className="text-gray-400">Fashion for Everyone</p>
-              </div>
-            </Link>
+            <div className="flex items-center gap-4">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-10 w-10">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-80">
+                  <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-6">
+                      <div className="bg-gradient-to-r from-orange-500 to-pink-500 p-1.5 rounded-lg">
+                        <ShoppingBag className="h-5 w-5 text-white" />
+                      </div>
+                      <h2 className="text-lg font-bold">StyleHub</h2>
+                    </div>
+                    <nav className="space-y-2">
+                      <Link
+                        href="/"
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <ShoppingBag className="h-4 w-4" />
+                        <span>All Products</span>
+                      </Link>
+                      <Link
+                        href="/category/women"
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <span className="text-lg">👗</span>
+                        <span>Women</span>
+                      </Link>
+                      <Link
+                        href="/category/men"
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <span className="text-lg">👔</span>
+                        <span>Men</span>
+                      </Link>
+                      <Link
+                        href="/category/kids"
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <span className="text-lg">🧸</span>
+                        <span>Kids</span>
+                      </Link>
+                      <Link
+                        href="/category/accessories"
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <span className="text-lg">👜</span>
+                        <span>Accessories</span>
+                      </Link>
+                    </nav>
+                  </div>
+                </SheetContent>
+              </Sheet>
+
+              <Link href="/" className="flex items-center gap-3">
+                <div className="bg-gradient-to-r from-orange-500 to-pink-500 p-2 rounded-xl">
+                  <ShoppingBag className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">StyleHub</h1>
+                  <p className="text-gray-600">Fashion & Lifestyle</p>
+                </div>
+              </Link>
+            </div>
 
             {/* Desktop Search Bar */}
             <div className="flex-1 max-w-md mx-8">
@@ -305,7 +393,8 @@ export default function HomePage() {
                   type="text"
                   placeholder="Search for products, brands and more"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearchInputChange}
+                  onFocus={handleSearchInputFocus}
                   className="pl-10 pr-8"
                 />
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -319,6 +408,13 @@ export default function HomePage() {
                   >
                     <X className="h-4 w-4" />
                   </Button>
+                )}
+                {showSuggestions && (
+                  <SearchSuggestions
+                    query={searchQuery}
+                    onSuggestionClick={handleSuggestionClick}
+                    onClose={() => setShowSuggestions(false)}
+                  />
                 )}
               </form>
             </div>
@@ -337,31 +433,6 @@ export default function HomePage() {
                 </Link>
               ))}
             </nav>
-
-            <div className="flex items-center gap-3">
-              <Button variant="outline" asChild className="bg-transparent">
-                <Link href="/admin">Admin Panel</Link>
-              </Button>
-              {products.length === 0 && !isLoading && (
-                <Button
-                  onClick={seedDatabase}
-                  disabled={isSeeding}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  {isSeeding ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Adding...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Add Sample Products
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
           </div>
         </div>
       </header>
@@ -369,6 +440,7 @@ export default function HomePage() {
       {/* Category Selector Sheet */}
       <Sheet open={showCategorySelector} onOpenChange={setShowCategorySelector}>
         <SheetContent side="bottom" className="h-[400px]">
+          <SheetTitle>Choose Category</SheetTitle>
           <div className="p-4">
             <h3 className="text-lg font-semibold text-center mb-6">Choose Category</h3>
             <div className="grid grid-cols-2 gap-4">
@@ -444,47 +516,38 @@ export default function HomePage() {
       </section>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 md:pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Filters Sidebar - Desktop */}
-          <div className="hidden lg:block">
-            <div className="sticky top-24">
-              <ProductFilters filters={filters} onFiltersChange={handleFiltersChange} />
-            </div>
-          </div>
-
-          {/* Products Section */}
-          <div className="lg:col-span-3">
-            {/* Section Header */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex flex-col gap-6">
+          {/* Products Grid */}
+          <div className="flex-1">
+            {/* Section Header with Filter Button */}
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                   <TrendingUp className="h-6 w-6 text-orange-500" />
-                  {filters.category ? `${filters.category} Collection` : "Trending Products"}
+                  {filters.search ? `Search Results for "${filters.search}"` : (filters.category ? `${filters.category} Collection` : "Trending Products")}
                 </h2>
                 <p className="text-gray-600 mt-1">
                   {isLoading ? "Loading..." : `${products.length} products available`}
                 </p>
               </div>
 
-              {/* Mobile Filter Button */}
               <div className="flex items-center gap-2">
+                {/* Filter Button */}
                 <Sheet open={showFilters} onOpenChange={setShowFilters}>
                   <SheetTrigger asChild>
-                    <Button variant="outline" size="sm" className="lg:hidden bg-transparent">
-                      <Filter className="h-4 w-4 mr-2" />
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <Filter className="h-4 w-4" />
                       Filters
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left" className="w-80 p-0">
-                    <div className="p-6">
-                      <h3 className="text-lg font-semibold mb-4">Filters</h3>
-                      <ProductFilters filters={filters} onFiltersChange={handleFiltersChange} />
-                    </div>
+                  <SheetContent side="left" className="w-80">
+                    <SheetTitle>Filters</SheetTitle>
+                    <ProductFilters onFiltersChange={handleFiltersChange} isLoading={isLoading} />
                   </SheetContent>
                 </Sheet>
 
-                {/* View Mode Toggle - Desktop */}
+                {/* View Mode Toggle */}
                 <div className="hidden md:flex items-center gap-1 border rounded-lg p-1">
                   <Button
                     variant={viewMode === "grid" ? "default" : "ghost"}

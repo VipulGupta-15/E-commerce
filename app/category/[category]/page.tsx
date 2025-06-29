@@ -2,18 +2,19 @@
 
 import type React from "react"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import type { Product, FilterOptions } from "@/lib/models"
 import { ProductCard } from "@/components/product-card"
 import { ProductFilters } from "@/components/product-filters"
 import { BannerCarousel } from "@/components/banner-carousel"
+import { SearchSuggestions } from "@/components/search-suggestions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { toast } from "@/hooks/use-toast"
-import { ArrowLeft, Filter, Search, Grid, List, Loader2, ShoppingBag, X, TrendingUp } from "lucide-react"
+import { ArrowLeft, Filter, Search, Grid, List, Loader2, ShoppingBag, X, TrendingUp, User } from "lucide-react"
 
 export default function CategoryPage() {
   const params = useParams()
@@ -25,9 +26,21 @@ export default function CategoryPage() {
   const [showSearch, setShowSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [showCategorySelector, setShowCategorySelector] = useState(false)
 
   const category = params.category as string
   const categoryName = category ? category.charAt(0).toUpperCase() + category.slice(1) : ""
+
+  const categories = useMemo(
+    () => [
+      { name: "Women", href: "/category/women", icon: "👗", color: "from-pink-500 to-rose-500" },
+      { name: "Men", href: "/category/men", icon: "👔", color: "from-blue-500 to-indigo-500" },
+      { name: "Kids", href: "/category/kids", icon: "🧸", color: "from-green-500 to-emerald-500" },
+      { name: "Accessories", href: "/category/accessories", icon: "👜", color: "from-purple-500 to-violet-500" },
+    ],
+    [],
+  )
 
   const fetchProducts = useCallback(
     async (filterOptions: FilterOptions = {}) => {
@@ -86,6 +99,7 @@ export default function CategoryPage() {
       setFilters(newFilters)
       fetchProducts(newFilters)
       setShowSearch(false)
+      setShowSuggestions(false)
     },
     [filters, searchQuery, fetchProducts],
   )
@@ -96,7 +110,29 @@ export default function CategoryPage() {
     delete newFilters.search
     setFilters(newFilters)
     fetchProducts(newFilters)
+    setShowSuggestions(false)
   }, [filters, fetchProducts])
+
+  const handleSuggestionClick = useCallback((suggestion: string) => {
+    setSearchQuery(suggestion)
+    const newFilters = { ...filters, search: suggestion }
+    setFilters(newFilters)
+    fetchProducts(newFilters)
+    setShowSuggestions(false)
+    setShowSearch(false)
+  }, [filters, fetchProducts])
+
+  const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchQuery(value)
+    setShowSuggestions(value.length >= 2)
+  }, [])
+
+  const handleSearchInputFocus = useCallback(() => {
+    if (searchQuery.length >= 2) {
+      setShowSuggestions(true)
+    }
+  }, [searchQuery])
 
   const getCategoryIcon = (cat: string) => {
     const icons: Record<string, string> = {
@@ -166,7 +202,8 @@ export default function CategoryPage() {
                       type="text"
                       placeholder={`Search in ${categoryName}...`}
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={handleSearchInputChange}
+                      onFocus={handleSearchInputFocus}
                       className="pl-10 pr-8 h-10"
                     />
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -180,6 +217,13 @@ export default function CategoryPage() {
                       >
                         <X className="h-4 w-4" />
                       </Button>
+                    )}
+                    {showSuggestions && (
+                      <SearchSuggestions
+                        query={searchQuery}
+                        onSuggestionClick={handleSuggestionClick}
+                        onClose={() => setShowSuggestions(false)}
+                      />
                     )}
                   </div>
                   <Button type="submit" size="icon" className="bg-orange-500 hover:bg-orange-600 h-10 w-10">
@@ -217,7 +261,8 @@ export default function CategoryPage() {
                   type="text"
                   placeholder={`Search in ${categoryName}...`}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearchInputChange}
+                  onFocus={handleSearchInputFocus}
                   className="pl-10 pr-8"
                 />
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -231,6 +276,13 @@ export default function CategoryPage() {
                   >
                     <X className="h-4 w-4" />
                   </Button>
+                )}
+                {showSuggestions && (
+                  <SearchSuggestions
+                    query={searchQuery}
+                    onSuggestionClick={handleSuggestionClick}
+                    onClose={() => setShowSuggestions(false)}
+                  />
                 )}
               </form>
             </div>
@@ -271,47 +323,38 @@ export default function CategoryPage() {
       </section>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 md:pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Filters Sidebar - Desktop */}
-          <div className="hidden lg:block">
-            <div className="sticky top-24">
-              <ProductFilters filters={filters} onFiltersChange={handleFiltersChange} />
-            </div>
-          </div>
-
-          {/* Products Section */}
-          <div className="lg:col-span-3">
-            {/* Section Header */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex flex-col gap-6">
+          {/* Products Grid */}
+          <div className="flex-1">
+            {/* Section Header with Filter Button */}
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                   <TrendingUp className="h-6 w-6 text-orange-500" />
-                  {categoryName} Collection
+                  {filters.search ? `Search Results for "${filters.search}"` : `${categoryName} Collection`}
                 </h2>
                 <p className="text-gray-600 mt-1">
                   {isLoading ? "Loading..." : `${products.length} products available`}
                 </p>
               </div>
 
-              {/* Mobile Filter Button */}
               <div className="flex items-center gap-2">
+                {/* Filter Button */}
                 <Sheet open={showFilters} onOpenChange={setShowFilters}>
                   <SheetTrigger asChild>
-                    <Button variant="outline" size="sm" className="lg:hidden bg-transparent">
-                      <Filter className="h-4 w-4 mr-2" />
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <Filter className="h-4 w-4" />
                       Filters
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left" className="w-80 p-0">
-                    <div className="p-6">
-                      <h3 className="text-lg font-semibold mb-4">Filters</h3>
-                      <ProductFilters filters={filters} onFiltersChange={handleFiltersChange} />
-                    </div>
+                  <SheetContent side="left" className="w-80">
+                    <SheetTitle>Filters</SheetTitle>
+                    <ProductFilters onFiltersChange={handleFiltersChange} isLoading={isLoading} />
                   </SheetContent>
                 </Sheet>
 
-                {/* View Mode Toggle - Desktop */}
+                {/* View Mode Toggle */}
                 <div className="hidden md:flex items-center gap-1 border rounded-lg p-1">
                   <Button
                     variant={viewMode === "grid" ? "default" : "ghost"}
@@ -385,6 +428,64 @@ export default function CategoryPage() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Category Selector Sheet */}
+      <Sheet open={showCategorySelector} onOpenChange={setShowCategorySelector}>
+        <SheetContent side="bottom" className="h-[400px]">
+          <SheetTitle>Choose Category</SheetTitle>
+          <div className="p-4">
+            <h3 className="text-lg font-semibold text-center mb-6">Choose Category</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {categories.map((cat) => (
+                <Link
+                  key={cat.name}
+                  href={cat.href}
+                  onClick={() => setShowCategorySelector(false)}
+                  className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition-all duration-200 group"
+                >
+                  <div
+                    className={`w-16 h-16 rounded-full bg-gradient-to-r ${cat.color} flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-200`}
+                  >
+                    {cat.icon}
+                  </div>
+                  <span className="font-semibold text-gray-900 group-hover:text-orange-600">{cat.name}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+        <div className="grid grid-cols-4 gap-1 p-2">
+          <Link href="/" className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-colors">
+            <ShoppingBag className="h-5 w-5" />
+            <span className="text-xs font-medium">Home</span>
+          </Link>
+          <button
+            onClick={() => setShowCategorySelector(true)}
+            className="flex flex-col items-center gap-1 p-2 rounded-lg text-orange-500 bg-orange-50"
+          >
+            <Grid className="h-5 w-5" />
+            <span className="text-xs font-medium">Categories</span>
+          </button>
+          <button
+            onClick={() => setShowSearch(!showSearch)}
+            className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-colors"
+          >
+            <Search className="h-5 w-5" />
+            <span className="text-xs font-medium">Search</span>
+          </button>
+          <Link
+            href="/admin"
+            className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-colors"
+          >
+            <User className="h-5 w-5" />
+            <span className="text-xs font-medium">Admin</span>
+          </Link>
         </div>
       </div>
     </div>

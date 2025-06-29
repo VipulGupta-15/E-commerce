@@ -2,9 +2,11 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import {
   Dialog,
   DialogContent,
@@ -19,7 +21,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Trash2, Edit, Plus, Package, ShoppingCart, Clock, AlertTriangle, DollarSign, Eye, EyeOff } from "lucide-react"
+import { Trash2, Edit, Plus, Package, ShoppingCart, Clock, AlertTriangle, DollarSign, Eye, EyeOff, Grid, Search, User, ShoppingBag } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 interface Product {
@@ -487,15 +489,6 @@ export default function AdminPage() {
                 Login
               </Button>
             </form>
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Demo Credentials:</strong>
-                <br />
-                Username: admin
-                <br />
-                Password: admin123
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -566,292 +559,306 @@ export default function AdminPage() {
           </Card>
         </div>
 
-        {/* Products Section */}
-        <div className="space-y-6 mb-8">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Package className="h-6 w-6" />
+        {/* Tabs for Products and Orders Management */}
+        <Tabs defaultValue="products" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="products" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
               Products Management
-            </h2>
-            <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={resetProductForm} className="bg-orange-500 hover:bg-orange-600">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Product
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Add New Product</DialogTitle>
-                  <DialogDescription>Fill in the product details below.</DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleAddProduct} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              Orders Management
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Products Tab Content */}
+          <TabsContent value="products" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <Package className="h-6 w-6" />
+                Products Management
+              </h2>
+              <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={resetProductForm} className="bg-orange-500 hover:bg-orange-600">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Product
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Add New Product</DialogTitle>
+                    <DialogDescription>Fill in the product details below.</DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleAddProduct} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="name">Product Name</Label>
+                        <Input
+                          id="name"
+                          value={newProduct.name}
+                          onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="category">Category</Label>
+                        <Select
+                          value={newProduct.category}
+                          onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem key={category} value={category}>
+                                {category}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                     <div>
-                      <Label htmlFor="name">Product Name</Label>
-                      <Input
-                        id="name"
-                        value={newProduct.name}
-                        onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={newProduct.description}
+                        onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                         required
                       />
                     </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="price">Price (₹)</Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          value={newProduct.price}
+                          onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="stock">Stock Quantity</Label>
+                        <Input
+                          id="stock"
+                          type="number"
+                          value={newProduct.stock}
+                          onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
                     <div>
-                      <Label htmlFor="category">Category</Label>
-                      <Select
-                        value={newProduct.category}
-                        onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
+                      <Label htmlFor="colors">Colors (comma-separated)</Label>
+                      <Input
+                        id="colors"
+                        value={newProduct.colors}
+                        onChange={(e) => setNewProduct({ ...newProduct, colors: e.target.value })}
+                        placeholder="Red, Blue, Green"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="sizes">Sizes (comma-separated)</Label>
+                      <Input
+                        id="sizes"
+                        value={newProduct.sizes}
+                        onChange={(e) => setNewProduct({ ...newProduct, sizes: e.target.value })}
+                        placeholder="S, M, L, XL"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="images">Image URLs (comma-separated)</Label>
+                      <Textarea
+                        id="images"
+                        value={newProduct.images}
+                        onChange={(e) => setNewProduct({ ...newProduct, images: e.target.value })}
+                        placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="featured"
+                        checked={newProduct.featured}
+                        onCheckedChange={(checked) => setNewProduct({ ...newProduct, featured: checked as boolean })}
+                      />
+                      <Label htmlFor="featured">Featured Product</Label>
+                    </div>
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setIsAddProductOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" className="bg-orange-500 hover:bg-orange-600">
+                        Add Product
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {products.map((product) => (
+                <Card key={product._id} className="relative">
+                  {product.featured && <Badge className="absolute top-2 right-2 z-10 bg-orange-500">Featured</Badge>}
+                  <CardHeader>
+                    <div className="aspect-square relative mb-4 bg-gray-100 rounded-lg overflow-hidden">
+                      {product.images && product.images.length > 0 ? (
+                        <img
+                          src={product.images[0] || "/placeholder.svg"}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.src = `/placeholder.svg?height=200&width=200`
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <Package className="h-12 w-12" />
+                        </div>
+                      )}
+                    </div>
+                    <CardTitle className="text-lg">{product.name}</CardTitle>
+                    <CardDescription className="line-clamp-2">{product.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl font-bold text-green-600">₹{product.price.toLocaleString()}</span>
+                      <Badge variant={getStockBadgeColor(product.stock || 0)}>Stock: {product.stock || 0}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{product.category}</Badge>
+                    </div>
+                    {product.colors && product.colors.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        <span className="text-sm text-gray-600">Colors:</span>
+                        {product.colors.map((color, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {color}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    {(product.sizeOptions || product.sizes) && (product.sizeOptions || product.sizes)!.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        <span className="text-sm text-gray-600">Sizes:</span>
+                        {(product.sizeOptions || product.sizes)!.map((size, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {size}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 bg-transparent"
+                        onClick={() => startEditProduct(product)}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteProduct(product._id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* Orders Tab Content */}
+          <TabsContent value="orders" className="space-y-6">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <ShoppingCart className="h-6 w-6" />
+              Orders Management
+            </h2>
+
+            <div className="grid grid-cols-1 gap-6">
+              {orders.map((order) => (
+                <Card key={order._id}>
+                  <CardHeader>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="space-y-2">
+                        <CardTitle className="text-xl text-orange-600">{order.productName}</CardTitle>
+                        <div className="text-sm text-gray-600">
+                          Order ID: {order._id.slice(-8)} | {new Date(order.createdAt || Date.now()).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-600">
+                          ₹{(order.totalAmount || order.price || 0).toLocaleString()}
+                        </div>
+                        <Badge variant={getStatusBadgeColor(order.status)} className="mt-1">
+                          {order.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <h4 className="font-semibold">Customer Details</h4>
+                        <div className="text-sm space-y-1">
+                          <div>
+                            <strong>Name:</strong> {order.customerName}
+                          </div>
+                          <div>
+                            <strong>Phone:</strong> {order.customerPhone || order.phoneNumber || "N/A"}
+                          </div>
+                          <div>
+                            <strong>Address:</strong> {order.customerAddress || order.address || order.notes || "N/A"}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold">Product Details</h4>
+                        <div className="text-sm space-y-1">
+                          <div>
+                            <strong>Product ID:</strong> {order.productId.slice(-8)}
+                          </div>
+                          <div>
+                            <strong>Size:</strong> {order.size || "N/A"}
+                          </div>
+                          <div>
+                            <strong>Color:</strong> {order.color || "N/A"}
+                          </div>
+                          <div>
+                            <strong>Quantity:</strong> {order.quantity || 1}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
+                      <Button variant="outline" onClick={() => handleEditOrder(order)} className="flex-1">
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit Details
+                      </Button>
+                      <Select value={order.status} onValueChange={(value) => handleUpdateOrderStatus(order._id, value)}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
+                          {orderStatuses.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {status}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={newProduct.description}
-                      onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="price">Price (₹)</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        value={newProduct.price}
-                        onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="stock">Stock Quantity</Label>
-                      <Input
-                        id="stock"
-                        type="number"
-                        value={newProduct.stock}
-                        onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="colors">Colors (comma-separated)</Label>
-                    <Input
-                      id="colors"
-                      value={newProduct.colors}
-                      onChange={(e) => setNewProduct({ ...newProduct, colors: e.target.value })}
-                      placeholder="Red, Blue, Green"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="sizes">Sizes (comma-separated)</Label>
-                    <Input
-                      id="sizes"
-                      value={newProduct.sizes}
-                      onChange={(e) => setNewProduct({ ...newProduct, sizes: e.target.value })}
-                      placeholder="S, M, L, XL"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="images">Image URLs (comma-separated)</Label>
-                    <Textarea
-                      id="images"
-                      value={newProduct.images}
-                      onChange={(e) => setNewProduct({ ...newProduct, images: e.target.value })}
-                      placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="featured"
-                      checked={newProduct.featured}
-                      onCheckedChange={(checked) => setNewProduct({ ...newProduct, featured: checked as boolean })}
-                    />
-                    <Label htmlFor="featured">Featured Product</Label>
-                  </div>
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setIsAddProductOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" className="bg-orange-500 hover:bg-orange-600">
-                      Add Product
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((product) => (
-              <Card key={product._id} className="relative">
-                {product.featured && <Badge className="absolute top-2 right-2 z-10 bg-orange-500">Featured</Badge>}
-                <CardHeader>
-                  <div className="aspect-square relative mb-4 bg-gray-100 rounded-lg overflow-hidden">
-                    {product.images && product.images.length > 0 ? (
-                      <img
-                        src={product.images[0] || "/placeholder.svg"}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement
-                          target.src = `/placeholder.svg?height=200&width=200`
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        <Package className="h-12 w-12" />
-                      </div>
-                    )}
-                  </div>
-                  <CardTitle className="text-lg">{product.name}</CardTitle>
-                  <CardDescription className="line-clamp-2">{product.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-green-600">₹{product.price.toLocaleString()}</span>
-                    <Badge variant={getStockBadgeColor(product.stock || 0)}>Stock: {product.stock || 0}</Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{product.category}</Badge>
-                  </div>
-                  {product.colors && product.colors.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      <span className="text-sm text-gray-600">Colors:</span>
-                      {product.colors.map((color, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {color}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                  {(product.sizeOptions || product.sizes) && (product.sizeOptions || product.sizes)!.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      <span className="text-sm text-gray-600">Sizes:</span>
-                      {(product.sizeOptions || product.sizes)!.map((size, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {size}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 bg-transparent"
-                      onClick={() => startEditProduct(product)}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => handleDeleteProduct(product._id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        {/* Orders Section */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <ShoppingCart className="h-6 w-6" />
-            Orders Management
-          </h2>
-
-          <div className="grid grid-cols-1 gap-6">
-            {orders.map((order) => (
-              <Card key={order._id}>
-                <CardHeader>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="space-y-2">
-                      <CardTitle className="text-xl text-orange-600">{order.productName}</CardTitle>
-                      <div className="text-sm text-gray-600">
-                        Order ID: {order._id.slice(-8)} | {new Date(order.createdAt || Date.now()).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-green-600">
-                        ₹{(order.totalAmount || order.price || 0).toLocaleString()}
-                      </div>
-                      <Badge variant={getStatusBadgeColor(order.status)} className="mt-1">
-                        {order.status}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">Customer Details</h4>
-                      <div className="text-sm space-y-1">
-                        <div>
-                          <strong>Name:</strong> {order.customerName}
-                        </div>
-                        <div>
-                          <strong>Phone:</strong> {order.customerPhone || order.phoneNumber || "N/A"}
-                        </div>
-                        <div>
-                          <strong>Address:</strong> {order.customerAddress || order.address || order.notes || "N/A"}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">Product Details</h4>
-                      <div className="text-sm space-y-1">
-                        <div>
-                          <strong>Product ID:</strong> {order.productId.slice(-8)}
-                        </div>
-                        <div>
-                          <strong>Size:</strong> {order.size || "N/A"}
-                        </div>
-                        <div>
-                          <strong>Color:</strong> {order.color || "N/A"}
-                        </div>
-                        <div>
-                          <strong>Quantity:</strong> {order.quantity || 1}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
-                    <Button variant="outline" onClick={() => handleEditOrder(order)} className="flex-1">
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit Details
-                    </Button>
-                    <Select value={order.status} onValueChange={(value) => handleUpdateOrderStatus(order._id, value)}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {orderStatuses.map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Edit Product Dialog */}
         <Dialog open={isEditProductOpen} onOpenChange={setIsEditProductOpen}>
