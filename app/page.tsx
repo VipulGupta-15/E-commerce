@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
 import Link from "next/link"
-import type { Product, FilterOptions } from "@/lib/models"
+import type { Product, FilterOptions, Banner } from "@/lib/models"
 import { ProductCard } from "@/components/product-card"
 import { ProductFilters } from "@/components/product-filters"
 import { BannerCarousel } from "@/components/banner-carousel"
@@ -16,7 +16,6 @@ import { toast } from "@/hooks/use-toast"
 import {
   Loader2,
   ShoppingBag,
-  Sparkles,
   TrendingUp,
   Search,
   Filter,
@@ -29,18 +28,19 @@ import {
   List,
   Star,
 } from "lucide-react"
+import { Footer } from "@/components/footer"
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [filters, setFilters] = useState<FilterOptions>({})
-  const [isSeeding, setIsSeeding] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [showCategorySelector, setShowCategorySelector] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [banners, setBanners] = useState<Banner[]>([])
 
   const categories = useMemo(
     () => [
@@ -79,33 +79,6 @@ export default function HomePage() {
       setIsLoading(false)
     }
   }, [])
-
-  const seedDatabase = useCallback(async () => {
-    setIsSeeding(true)
-    try {
-      const response = await fetch("/api/seed", { method: "POST" })
-      const data = await response.json()
-
-      if (response.ok) {
-        toast({
-          title: "Success! 🎉",
-          description: data.message,
-        })
-        await fetchProducts()
-      } else {
-        throw new Error(data.error)
-      }
-    } catch (error) {
-      console.error("Error seeding database:", error)
-      toast({
-        title: "Error",
-        description: "Failed to seed database. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSeeding(false)
-    }
-  }, [fetchProducts])
 
   useEffect(() => {
     fetchProducts()
@@ -160,6 +133,22 @@ export default function HomePage() {
       setShowSuggestions(true)
     }
   }, [searchQuery])
+
+  // Fetch banners
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const response = await fetch("/api/banners")
+        if (response.ok) {
+          const data = await response.json()
+          setBanners(data)
+        }
+      } catch (error) {
+        console.error("Error fetching banners:", error)
+      }
+    }
+    fetchBanners()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -294,24 +283,7 @@ export default function HomePage() {
             {/* Add Sample Products Button - Mobile */}
             {!filters.search && (
               <div className="mt-3">
-                <Button
-                  onClick={seedDatabase}
-                  disabled={isSeeding}
-                  size="sm"
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  {isSeeding ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Adding Products...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Add Sample Products
-                    </>
-                  )}
-                </Button>
+                {/* Removed Add Sample Products button */}
               </div>
             )}
           </div>
@@ -439,20 +411,20 @@ export default function HomePage() {
 
       {/* Category Selector Sheet */}
       <Sheet open={showCategorySelector} onOpenChange={setShowCategorySelector}>
-        <SheetContent side="bottom" className="h-[400px]">
+        <SheetContent side="bottom" className="h-[500px]">
           <SheetTitle>Choose Category</SheetTitle>
-          <div className="p-4">
+          <div className="p-4 h-full overflow-y-auto">
             <h3 className="text-lg font-semibold text-center mb-6">Choose Category</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3">
               {categories.map((category) => (
                 <Link
                   key={category.name}
                   href={category.href}
                   onClick={() => setShowCategorySelector(false)}
-                  className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition-all duration-200 group"
+                  className="flex items-center gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition-all duration-200 group"
                 >
                   <div
-                    className={`w-16 h-16 rounded-full bg-gradient-to-r ${category.color} flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-200`}
+                    className={`w-12 h-12 rounded-full bg-gradient-to-r ${category.color} flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-200`}
                   >
                     {category.icon}
                   </div>
@@ -483,7 +455,7 @@ export default function HomePage() {
 
       {/* Banner Carousel - All Screens */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
-        <BannerCarousel />
+        <BannerCarousel banners={banners} />
       </section>
 
       {/* Stats Section - Desktop Only */}
@@ -516,7 +488,7 @@ export default function HomePage() {
       </section>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-6">
         <div className="flex flex-col gap-6">
           {/* Products Grid */}
           <div className="flex-1">
@@ -593,24 +565,9 @@ export default function HomePage() {
                     : "Get started by adding some sample products to see them here."}
                 </p>
                 {!filters.search && (
-                  <Button
-                    onClick={seedDatabase}
-                    disabled={isSeeding}
-                    size="lg"
-                    className="bg-orange-500 hover:bg-orange-600 text-white"
-                  >
-                    {isSeeding ? (
-                      <>
-                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                        Adding Products...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-5 w-5 mr-2" />
-                        Add Sample Products
-                      </>
-                    )}
-                  </Button>
+                  <div className="text-center">
+                    {/* Removed Add Sample Products button */}
+                  </div>
                 )}
               </div>
             ) : (
@@ -634,7 +591,7 @@ export default function HomePage() {
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
-        <div className="grid grid-cols-4 gap-1 p-2">
+        <div className="grid grid-cols-3 gap-1 p-2">
           <Link href="/" className="flex flex-col items-center gap-1 p-2 rounded-lg text-orange-500 bg-orange-50">
             <ShoppingBag className="h-5 w-5" />
             <span className="text-xs font-medium">Home</span>
@@ -653,15 +610,11 @@ export default function HomePage() {
             <Search className="h-5 w-5" />
             <span className="text-xs font-medium">Search</span>
           </button>
-          <Link
-            href="/admin"
-            className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-colors"
-          >
-            <User className="h-5 w-5" />
-            <span className="text-xs font-medium">Admin</span>
-          </Link>
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   )
 }

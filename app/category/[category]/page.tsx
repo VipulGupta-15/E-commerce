@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import type { Product, FilterOptions } from "@/lib/models"
+import type { Product, FilterOptions, Banner } from "@/lib/models"
 import { ProductCard } from "@/components/product-card"
 import { ProductFilters } from "@/components/product-filters"
 import { BannerCarousel } from "@/components/banner-carousel"
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { toast } from "@/hooks/use-toast"
 import { ArrowLeft, Filter, Search, Grid, List, Loader2, ShoppingBag, X, TrendingUp, User } from "lucide-react"
+import { Footer } from "@/components/footer"
 
 export default function CategoryPage() {
   const params = useParams()
@@ -28,6 +29,7 @@ export default function CategoryPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [showCategorySelector, setShowCategorySelector] = useState(false)
+  const [banners, setBanners] = useState<Banner[]>([])
 
   const category = params.category as string
   const categoryName = category ? category.charAt(0).toUpperCase() + category.slice(1) : ""
@@ -49,7 +51,7 @@ export default function CategoryPage() {
       setIsLoading(true)
       try {
         const params = new URLSearchParams()
-        params.append("category", categoryName)
+        params.append("category", category)
 
         if (filterOptions.search) params.append("search", filterOptions.search)
         if (filterOptions.minPrice) params.append("minPrice", filterOptions.minPrice.toString())
@@ -72,24 +74,24 @@ export default function CategoryPage() {
         setIsLoading(false)
       }
     },
-    [category, categoryName],
+    [category],
   )
 
   useEffect(() => {
     if (category) {
-      const initialFilters = { category: categoryName }
+      const initialFilters = { category: category }
       setFilters(initialFilters)
       fetchProducts(initialFilters)
     }
-  }, [category, categoryName, fetchProducts])
+  }, [category, fetchProducts])
 
   const handleFiltersChange = useCallback(
     (newFilters: FilterOptions) => {
-      const updatedFilters = { ...newFilters, category: categoryName }
+      const updatedFilters = { ...newFilters, category: category }
       setFilters(updatedFilters)
       fetchProducts(updatedFilters)
     },
-    [categoryName, fetchProducts],
+    [category, fetchProducts],
   )
 
   const handleSearch = useCallback(
@@ -153,6 +155,22 @@ export default function CategoryPage() {
     }
     return gradients[cat.toLowerCase()] || "from-gray-500 to-gray-600"
   }
+
+  // Fetch banners
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const response = await fetch("/api/banners")
+        if (response.ok) {
+          const data = await response.json()
+          setBanners(data)
+        }
+      } catch (error) {
+        console.error("Error fetching banners:", error)
+      }
+    }
+    fetchBanners()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -319,11 +337,11 @@ export default function CategoryPage() {
 
       {/* Banner Carousel - All Screens */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
-        <BannerCarousel />
+        <BannerCarousel banners={banners} />
       </section>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-6">
         <div className="flex flex-col gap-6">
           {/* Products Grid */}
           <div className="flex-1">
@@ -433,20 +451,20 @@ export default function CategoryPage() {
 
       {/* Category Selector Sheet */}
       <Sheet open={showCategorySelector} onOpenChange={setShowCategorySelector}>
-        <SheetContent side="bottom" className="h-[400px]">
+        <SheetContent side="bottom" className="h-[500px]">
           <SheetTitle>Choose Category</SheetTitle>
-          <div className="p-4">
+          <div className="p-4 h-full overflow-y-auto">
             <h3 className="text-lg font-semibold text-center mb-6">Choose Category</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3">
               {categories.map((cat) => (
                 <Link
                   key={cat.name}
                   href={cat.href}
                   onClick={() => setShowCategorySelector(false)}
-                  className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition-all duration-200 group"
+                  className="flex items-center gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition-all duration-200 group"
                 >
                   <div
-                    className={`w-16 h-16 rounded-full bg-gradient-to-r ${cat.color} flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-200`}
+                    className={`w-12 h-12 rounded-full bg-gradient-to-r ${cat.color} flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-200`}
                   >
                     {cat.icon}
                   </div>
@@ -460,7 +478,7 @@ export default function CategoryPage() {
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
-        <div className="grid grid-cols-4 gap-1 p-2">
+        <div className="grid grid-cols-3 gap-1 p-2">
           <Link href="/" className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-colors">
             <ShoppingBag className="h-5 w-5" />
             <span className="text-xs font-medium">Home</span>
@@ -479,15 +497,10 @@ export default function CategoryPage() {
             <Search className="h-5 w-5" />
             <span className="text-xs font-medium">Search</span>
           </button>
-          <Link
-            href="/admin"
-            className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-colors"
-          >
-            <User className="h-5 w-5" />
-            <span className="text-xs font-medium">Admin</span>
-          </Link>
         </div>
       </div>
+
+      <Footer />
     </div>
   )
 }

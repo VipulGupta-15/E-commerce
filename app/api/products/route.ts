@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const filter: any = {}
 
     if (category && category !== "all") {
-      filter.category = { $regex: new RegExp(category, "i") }
+      filter.category = { $regex: new RegExp(`^${category}$`, "i") }
     }
 
     if (search) {

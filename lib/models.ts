@@ -36,3 +36,24 @@ export interface FilterOptions {
   sizes?: string[]
   search?: string
 }
+
+export interface Banner {
+  _id: string
+  title: string
+  subtitle?: string
+  imageUrl: string
+  linkUrl?: string
+  isActive: boolean
+  order: number
+  textColor?: string
+  fontSize?: string
+  fontWeight?: string
+  fontStyle?: string
+  textAlign?: string
+  backgroundColor?: string
+  layout?: any[]
+  backgroundImage?: string
+  backgroundOffset?: { x: number; y: number }
+  createdAt: Date
+  updatedAt: Date
+}

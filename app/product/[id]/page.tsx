@@ -12,7 +12,6 @@ import { ProductCard } from "@/components/product-card"
 import { toast } from "@/hooks/use-toast"
 import {
   ArrowLeft,
-  Heart,
   Share2,
   ShoppingCart,
   Star,
@@ -35,7 +34,6 @@ export default function ProductDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-  const [isLiked, setIsLiked] = useState(false)
   const [selectedSize, setSelectedSize] = useState("")
   const [selectedColor, setSelectedColor] = useState("")
 
@@ -133,9 +131,6 @@ export default function ProductDetailPage() {
     if (product?.images && product.images[imageIndex]) {
       return product.images[imageIndex]
     }
-    if (product?.image) {
-      return product.image
-    }
 
     // Category-specific placeholder images
     const categoryImages = {
@@ -201,14 +196,6 @@ export default function ProductDetailPage() {
             </Link>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsLiked(!isLiked)}
-                className={`transition-colors duration-200 ${isLiked ? "text-red-500" : "text-gray-600"}`}
-              >
-                <Heart className={`h-5 w-5 ${isLiked ? "fill-current" : ""}`} />
-              </Button>
               <Button variant="ghost" size="icon" onClick={handleShare}>
                 <Share2 className="h-5 w-5" />
               </Button>
@@ -243,7 +230,7 @@ export default function ProductDetailPage() {
                 src={getProductImage(selectedImageIndex) || "/placeholder.svg"}
                 alt={product.name}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                loading="priority"
+                loading="eager"
               />
 
               {/* Image Navigation */}
@@ -393,16 +380,7 @@ export default function ProductDetailPage() {
                 )}
               </Button>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="font-semibold hover:bg-gray-50 transition-colors duration-200 bg-transparent"
-                  onClick={() => setIsLiked(!isLiked)}
-                >
-                  <Heart className={`h-5 w-5 mr-2 ${isLiked ? "fill-current text-red-500" : ""}`} />
-                  {isLiked ? "Saved" : "Save"}
-                </Button>
+              <div className="grid grid-cols-1 gap-4">
                 <Button
                   variant="outline"
                   size="lg"

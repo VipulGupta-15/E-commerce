@@ -21,44 +21,10 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Trash2, Edit, Plus, Package, ShoppingCart, Clock, AlertTriangle, DollarSign, Eye, EyeOff, Grid, Search, User, ShoppingBag } from "lucide-react"
+import { Trash2, Edit, Plus, Package, ShoppingCart, Clock, AlertTriangle, DollarSign, Eye, EyeOff, Grid, Search, User, ShoppingBag, Image } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-
-interface Product {
-  _id: string
-  name: string
-  description: string
-  price: number
-  category: string
-  stock: number
-  colors?: string[]
-  sizes?: string[]
-  sizeOptions?: string[]
-  images?: string[]
-  featured?: boolean
-  createdAt?: string
-  updatedAt?: string
-}
-
-interface Order {
-  _id: string
-  customerName: string
-  customerPhone?: string
-  phoneNumber?: string
-  customerAddress?: string
-  address?: string
-  notes?: string
-  productId: string
-  productName: string
-  size?: string
-  color?: string
-  quantity?: number
-  totalAmount?: number
-  price?: number
-  status: string
-  createdAt?: string
-  updatedAt?: string
-}
+import type { Product, Order, Banner } from "@/lib/models"
+import { BannerManagement } from "@/components/banner-management"
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -67,10 +33,14 @@ export default function AdminPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<Order[]>([])
+  const [banners, setBanners] = useState<Banner[]>([])
   const [loading, setLoading] = useState(true)
   const [isAddProductOpen, setIsAddProductOpen] = useState(false)
+  const [isAddBannerOpen, setIsAddBannerOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [editingBanner, setEditingBanner] = useState<Banner | null>(null)
   const [isEditProductOpen, setIsEditProductOpen] = useState(false)
+  const [isEditBannerOpen, setIsEditBannerOpen] = useState(false)
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
   const [isEditOrderOpen, setIsEditOrderOpen] = useState(false)
   const { toast } = useToast()
@@ -83,15 +53,23 @@ export default function AdminPage() {
     category: "",
     stock: "",
     colors: "",
-    sizes: "",
+    sizeOptions: "",
     images: "",
     featured: false,
   })
 
   const [editOrderData, setEditOrderData] = useState({
     size: "",
-    color: "",
     status: "",
+  })
+
+  const [newBanner, setNewBanner] = useState({
+    title: "",
+    subtitle: "",
+    imageUrl: "",
+    linkUrl: "",
+    isActive: true,
+    order: 0,
   })
 
   const categories = ["Men", "Women", "Kids", "Accessories", "Footwear"]
@@ -110,7 +88,7 @@ export default function AdminPage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      await Promise.all([fetchProducts(), fetchOrders()])
+      await Promise.all([fetchProducts(), fetchOrders(), fetchBanners()])
     } finally {
       setLoading(false)
     }
@@ -150,6 +128,23 @@ export default function AdminPage() {
     }
   }
 
+  const fetchBanners = async () => {
+    try {
+      const response = await fetch("/api/banners")
+      if (response.ok) {
+        const data = await response.json()
+        setBanners(data)
+      }
+    } catch (error) {
+      console.error("Error fetching banners:", error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch banners",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
     if (username === "admin" && password === "admin123") {
@@ -184,7 +179,7 @@ export default function AdminPage() {
       category: "",
       stock: "",
       colors: "",
-      sizes: "",
+      sizeOptions: "",
       images: "",
       featured: false,
     })
@@ -204,7 +199,7 @@ export default function AdminPage() {
           .split(",")
           .map((c) => c.trim())
           .filter(Boolean),
-        sizeOptions: newProduct.sizes
+        sizeOptions: newProduct.sizeOptions
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
@@ -257,7 +252,7 @@ export default function AdminPage() {
           .split(",")
           .map((c) => c.trim())
           .filter(Boolean),
-        sizeOptions: newProduct.sizes
+        sizeOptions: newProduct.sizeOptions
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
@@ -331,7 +326,7 @@ export default function AdminPage() {
       category: product.category,
       stock: (product.stock || 0).toString(),
       colors: (product.colors || []).join(", "),
-      sizes: (product.sizeOptions || product.sizes || []).join(", "),
+      sizeOptions: (product.sizeOptions || []).join(", "),
       images: (product.images || []).join(", "),
       featured: product.featured || false,
     })
@@ -339,6 +334,8 @@ export default function AdminPage() {
   }
 
   const handleUpdateOrderStatus = async (orderId: string, status: string) => {
+    if (!orderId) return
+
     try {
       const response = await fetch(`/api/orders/${orderId}`, {
         method: "PUT",
@@ -372,7 +369,6 @@ export default function AdminPage() {
     setEditingOrder(order)
     setEditOrderData({
       size: order.size || "",
-      color: order.color || "",
       status: order.status,
     })
     setIsEditOrderOpen(true)
@@ -438,7 +434,7 @@ export default function AdminPage() {
   // Calculate statistics with safe fallbacks
   const totalRevenue = orders
     .filter((order) => order.status === "Delivered")
-    .reduce((sum, order) => sum + (order.totalAmount || order.price || 0), 0)
+    .reduce((sum, order) => sum + (order.price || 0), 0)
   const totalOrders = orders.length
   const pendingOrders = orders.filter((order) => order.status === "Pending").length
   const lowStockProducts = products.filter((product) => (product.stock || 0) <= 5).length
@@ -561,7 +557,7 @@ export default function AdminPage() {
 
         {/* Tabs for Products and Orders Management */}
         <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Products Management
@@ -569,6 +565,10 @@ export default function AdminPage() {
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4" />
               Orders Management
+            </TabsTrigger>
+            <TabsTrigger value="banners" className="flex items-center gap-2">
+              <Image className="h-4 w-4" />
+              Banner Management
             </TabsTrigger>
           </TabsList>
 
@@ -662,11 +662,11 @@ export default function AdminPage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="sizes">Sizes (comma-separated)</Label>
+                      <Label htmlFor="sizeOptions">Sizes (comma-separated)</Label>
                       <Input
-                        id="sizes"
-                        value={newProduct.sizes}
-                        onChange={(e) => setNewProduct({ ...newProduct, sizes: e.target.value })}
+                        id="sizeOptions"
+                        value={newProduct.sizeOptions}
+                        onChange={(e) => setNewProduct({ ...newProduct, sizeOptions: e.target.value })}
                         placeholder="S, M, L, XL"
                       />
                     </div>
@@ -743,10 +743,10 @@ export default function AdminPage() {
                         ))}
                       </div>
                     )}
-                    {(product.sizeOptions || product.sizes) && (product.sizeOptions || product.sizes)!.length > 0 && (
+                    {product.sizeOptions && product.sizeOptions.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         <span className="text-sm text-gray-600">Sizes:</span>
-                        {(product.sizeOptions || product.sizes)!.map((size, index) => (
+                        {product.sizeOptions.map((size, index) => (
                           <Badge key={index} variant="secondary" className="text-xs">
                             {size}
                           </Badge>
@@ -763,7 +763,7 @@ export default function AdminPage() {
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
                       </Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteProduct(product._id)}>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteProduct(product._id || "")}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -788,12 +788,12 @@ export default function AdminPage() {
                       <div className="space-y-2">
                         <CardTitle className="text-xl text-orange-600">{order.productName}</CardTitle>
                         <div className="text-sm text-gray-600">
-                          Order ID: {order._id.slice(-8)} | {new Date(order.createdAt || Date.now()).toLocaleDateString()}
+                          Order ID: {order._id?.slice(-8) || "N/A"} | {new Date(order.createdAt || Date.now()).toLocaleDateString()}
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-bold text-green-600">
-                          ₹{(order.totalAmount || order.price || 0).toLocaleString()}
+                          ₹{(order.price || 0).toLocaleString()}
                         </div>
                         <Badge variant={getStatusBadgeColor(order.status)} className="mt-1">
                           {order.status}
@@ -810,10 +810,10 @@ export default function AdminPage() {
                             <strong>Name:</strong> {order.customerName}
                           </div>
                           <div>
-                            <strong>Phone:</strong> {order.customerPhone || order.phoneNumber || "N/A"}
+                            <strong>Phone:</strong> {order.phoneNumber || "N/A"}
                           </div>
                           <div>
-                            <strong>Address:</strong> {order.customerAddress || order.address || order.notes || "N/A"}
+                            <strong>Notes:</strong> {order.notes || "N/A"}
                           </div>
                         </div>
                       </div>
@@ -821,16 +821,13 @@ export default function AdminPage() {
                         <h4 className="font-semibold">Product Details</h4>
                         <div className="text-sm space-y-1">
                           <div>
-                            <strong>Product ID:</strong> {order.productId.slice(-8)}
+                            <strong>Product ID:</strong> {order.productId?.slice(-8) || "N/A"}
                           </div>
                           <div>
                             <strong>Size:</strong> {order.size || "N/A"}
                           </div>
                           <div>
-                            <strong>Color:</strong> {order.color || "N/A"}
-                          </div>
-                          <div>
-                            <strong>Quantity:</strong> {order.quantity || 1}
+                            <strong>Price:</strong> ₹{(order.price || 0).toLocaleString()}
                           </div>
                         </div>
                       </div>
@@ -840,23 +837,32 @@ export default function AdminPage() {
                         <Edit className="h-4 w-4 mr-2" />
                         Edit Details
                       </Button>
-                      <Select value={order.status} onValueChange={(value) => handleUpdateOrderStatus(order._id, value)}>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {orderStatuses.map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {status}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUpdateOrderStatus(order._id || "", "Confirmed")}
+                        disabled={order.status === "Confirmed"}
+                      >
+                        Confirm
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUpdateOrderStatus(order._id || "", "Delivered")}
+                        disabled={order.status === "Delivered"}
+                      >
+                        Deliver
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
+          </TabsContent>
+
+          {/* Banner Tab Content */}
+          <TabsContent value="banners" className="space-y-6">
+            <BannerManagement banners={banners} onBannerChange={fetchBanners} />
           </TabsContent>
         </Tabs>
 
@@ -938,11 +944,11 @@ export default function AdminPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="edit-sizes">Sizes (comma-separated)</Label>
+                <Label htmlFor="edit-sizeOptions">Sizes (comma-separated)</Label>
                 <Input
-                  id="edit-sizes"
-                  value={newProduct.sizes}
-                  onChange={(e) => setNewProduct({ ...newProduct, sizes: e.target.value })}
+                  id="edit-sizeOptions"
+                  value={newProduct.sizeOptions}
+                  onChange={(e) => setNewProduct({ ...newProduct, sizeOptions: e.target.value })}
                   placeholder="S, M, L, XL"
                 />
               </div>
@@ -989,14 +995,6 @@ export default function AdminPage() {
                   id="edit-size"
                   value={editOrderData.size}
                   onChange={(e) => setEditOrderData({ ...editOrderData, size: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-color">Color</Label>
-                <Input
-                  id="edit-color"
-                  value={editOrderData.color}
-                  onChange={(e) => setEditOrderData({ ...editOrderData, color: e.target.value })}
                 />
               </div>
               <div>
