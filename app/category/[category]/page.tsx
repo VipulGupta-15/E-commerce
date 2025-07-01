@@ -1,7 +1,7 @@
+
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
@@ -154,17 +154,8 @@ export default function CategoryPage() {
     return gradients[cat.toLowerCase()] || "from-gray-500 to-gray-600"
   }
 
-  
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50/50 via-white to-purple-50/50">
-      {/* Floating Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-orange-200/20 rounded-full blur-3xl floating"></div>
-        <div className="absolute top-40 right-10 w-96 h-96 bg-purple-200/20 rounded-full blur-3xl floating-delayed"></div>
-        <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-pink-200/20 rounded-full blur-3xl floating"></div>
-      </div>
-
       {/* Header */}
       <header className="glass-header sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -326,114 +317,109 @@ export default function CategoryPage() {
         </div>
       )}
 
-      
-
-      {/* Main Content */}
+      {/* Main Content - ONLY Products */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-6">
         <div className="flex flex-col gap-6">
-          {/* Products Grid */}
-          <div className="flex-1">
-            {/* Section Header with Filter Button */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  <TrendingUp className="h-6 w-6 text-orange-500" />
-                  {filters.search ? `Search Results for "${filters.search}"` : `${categoryName} Collection`}
-                </h2>
-                <p className="text-gray-600 mt-1">
-                  {isLoading ? "Loading..." : `${products.length} products available`}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {/* Filter Button */}
-                <Sheet open={showFilters} onOpenChange={setShowFilters}>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" className="glass border-white/20 hover:bg-white/10 flex items-center gap-2">
-                      <Filter className="h-4 w-4" />
-                      Filters
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="glass-modal border-0 w-80">
-                    <SheetTitle>Filters</SheetTitle>
-                    <ProductFilters onFiltersChange={handleFiltersChange} isLoading={isLoading} />
-                  </SheetContent>
-                </Sheet>
-
-                {/* View Mode Toggle */}
-                <div className="hidden md:flex items-center gap-1 glass border-white/20 rounded-lg p-1">
-                  <Button
-                    variant={viewMode === "grid" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("grid")}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Grid className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === "list" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("list")}
-                    className="h-8 w-8 p-0"
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+          {/* Section Header with Filter Button */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <TrendingUp className="h-6 w-6 text-orange-500" />
+                {filters.search ? `Search Results for "${filters.search}"` : `${categoryName} Collection`}
+              </h2>
+              <p className="text-gray-600 mt-1">
+                {isLoading ? "Loading..." : `${products.length} products available`}
+              </p>
             </div>
 
-            {/* Products Grid/List */}
-            {isLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <div className="text-center">
-                  <div className="relative">
-                    <Loader2 className="h-16 w-16 animate-spin text-orange-500 mb-4 mx-auto" />
-                    <div className="absolute inset-0 h-16 w-16 border-4 border-orange-200 rounded-full animate-ping mx-auto"></div>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Loading {categoryName}...</h3>
-                  <p className="text-gray-600">Please wait while we fetch the latest items</p>
-                </div>
-              </div>
-            ) : products.length === 0 ? (
-              <div className="text-center py-20">
-                <div
-                  className={`bg-gradient-to-r ${getCategoryGradient(category)} rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6 text-white text-3xl`}
-                >
-                  {getCategoryIcon(category)}
-                </div>
-                <h3 className="text-2xl font-semibold text-gray-900 mb-4">No {categoryName} Products Found</h3>
-                <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                  {filters.search
-                    ? `No products match your search "${filters.search}" in ${categoryName}. Try different keywords.`
-                    : `We're working on adding more ${categoryName.toLowerCase()} products. Check back soon!`}
-                </p>
-                <div className="flex gap-4 justify-center">
-                  {filters.search && (
-                    <Button onClick={clearSearch} variant="outline" className="bg-transparent">
-                      Clear Search
-                    </Button>
-                  )}
-                  <Button asChild className="bg-orange-500 hover:bg-orange-600">
-                    <Link href="/">Browse All Products</Link>
+            <div className="flex items-center gap-2">
+              {/* Filter Button */}
+              <Sheet open={showFilters} onOpenChange={setShowFilters}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="glass border-white/20 hover:bg-white/10 flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filters
                   </Button>
-                </div>
+                </SheetTrigger>
+                <SheetContent side="left" className="glass-modal border-0 w-80">
+                  <SheetTitle>Filters</SheetTitle>
+                  <ProductFilters onFiltersChange={handleFiltersChange} isLoading={isLoading} />
+                </SheetContent>
+              </Sheet>
+
+              {/* View Mode Toggle */}
+              <div className="hidden md:flex items-center gap-1 glass border-white/20 rounded-lg p-1">
+                <Button
+                  variant={viewMode === "grid" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("grid")}
+                  className="h-8 w-8 p-0"
+                >
+                  <Grid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "list" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("list")}
+                  className="h-8 w-8 p-0"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
               </div>
-            ) : (
-              <div
-                className={
-                  viewMode === "grid"
-                    ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6"
-                    : "space-y-4"
-                }
-              >
-                {products.map((product, index) => (
-                  <div key={product._id} className="animate-fade-in-up" style={{ animationDelay: `${index * 50}ms` }}>
-                    <ProductCard product={product} viewMode={viewMode} />
-                  </div>
-                ))}
-              </div>
-            )}
+            </div>
           </div>
+
+          {/* Products Grid/List */}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <div className="relative">
+                  <Loader2 className="h-16 w-16 animate-spin text-orange-500 mb-4 mx-auto" />
+                  <div className="absolute inset-0 h-16 w-16 border-4 border-orange-200 rounded-full animate-ping mx-auto"></div>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Loading {categoryName}...</h3>
+                <p className="text-gray-600">Please wait while we fetch the latest items</p>
+              </div>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="text-center py-20">
+              <div
+                className={`bg-gradient-to-r ${getCategoryGradient(category)} rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6 text-white text-3xl`}
+              >
+                {getCategoryIcon(category)}
+              </div>
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">No {categoryName} Products Found</h3>
+              <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                {filters.search
+                  ? `No products match your search "${filters.search}" in ${categoryName}. Try different keywords.`
+                  : `We're working on adding more ${categoryName.toLowerCase()} products. Check back soon!`}
+              </p>
+              <div className="flex gap-4 justify-center">
+                {filters.search && (
+                  <Button onClick={clearSearch} variant="outline" className="bg-transparent">
+                    Clear Search
+                  </Button>
+                )}
+                <Button asChild className="bg-orange-500 hover:bg-orange-600">
+                  <Link href="/">Browse All Products</Link>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div
+              className={
+                viewMode === "grid"
+                  ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6"
+                  : "space-y-4"
+              }
+            >
+              {products.map((product, index) => (
+                <div key={product._id} className="animate-fade-in-up" style={{ animationDelay: `${index * 50}ms` }}>
+                  <ProductCard product={product} viewMode={viewMode} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

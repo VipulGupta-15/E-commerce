@@ -172,21 +172,15 @@ export default function HomePage() {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-2">
               {categories.map((category) => (
-                <Button
-                  key={category}
-                  variant="ghost"
-                  className="text-sm hover:bg-orange-50 hover:text-orange-600"
-                  onClick={() => setFilters((prev) => ({ ...prev, category }))}
-                >
-                  {category}
-                </Button>
-              ))}
-              <Link href="/admin">
-                <Button variant="outline" size="sm" className="ml-4">
-                  Admin
-                </Button>
-              </Link>
-            </nav>
+                <Link key={category} href={`/category/${category.toLowerCase()}`}>
+                  <Button
+                    variant="ghost"
+                    className="text-sm hover:bg-orange-50 hover:text-orange-600"
+                  >
+                    {category}
+                  </Button>
+                </Link>
+              ))}</nav>
 
             {/* Mobile Menu Button */}
             <div className="md:hidden flex items-center gap-2">
