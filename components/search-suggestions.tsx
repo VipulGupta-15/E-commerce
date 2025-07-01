@@ -10,9 +10,10 @@ interface SearchSuggestionsProps {
   onSuggestionClick: (suggestion: string) => void
   onClose: () => void
   className?: string
+  navigateToSearch?: boolean
 }
 
-export function SearchSuggestions({ query, onSuggestionClick, onClose, className }: SearchSuggestionsProps) {
+export function SearchSuggestions({ query, onSuggestionClick, onClose, className, navigateToSearch = false }: SearchSuggestionsProps) {
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
@@ -115,7 +116,13 @@ export function SearchSuggestions({ query, onSuggestionClick, onClose, className
           {suggestions.map((suggestion, index) => (
             <button
               key={suggestion}
-              onClick={() => onSuggestionClick(suggestion)}
+              onClick={() => {
+                if (navigateToSearch) {
+                  window.location.href = `/search?q=${encodeURIComponent(suggestion)}`
+                } else {
+                  onSuggestionClick(suggestion)
+                }
+              }}
               className={cn(
                 "w-full px-4 py-3 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors flex items-center gap-3",
                 selectedIndex === index && "bg-gray-50"

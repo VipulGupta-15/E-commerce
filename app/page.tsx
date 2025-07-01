@@ -87,9 +87,9 @@ export default function HomePage() {
 
   const handleSearch = useCallback(
     (query: string) => {
-      setFilters((prev) => ({ ...prev, search: query }))
-      setSearchQuery(query)
-      setShowSearch(false)
+      if (query.trim()) {
+        window.location.href = `/search?q=${encodeURIComponent(query.trim())}`
+      }
     },
     []
   )
@@ -154,6 +154,7 @@ export default function HomePage() {
                   placeholder="Search for products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setShowSearch(true)}
                   onKeyPress={(e) => e.key === "Enter" && handleSearch(searchQuery)}
                   className="pr-12"
                 />
@@ -225,6 +226,7 @@ export default function HomePage() {
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setShowSearch(true)}
                 onKeyPress={(e) => e.key === "Enter" && handleSearch(searchQuery)}
                 className="flex-1"
               />
@@ -454,10 +456,12 @@ export default function HomePage() {
       </div>
 
       {/* Search Suggestions */}
-      {showSearch && (
+      {searchQuery.length >= 2 && showSearch && (
         <SearchSuggestions
-          onSearch={handleSearch}
+          query={searchQuery}
+          onSuggestionClick={handleSearch}
           onClose={() => setShowSearch(false)}
+          navigateToSearch={true}
         />
       )}
 
