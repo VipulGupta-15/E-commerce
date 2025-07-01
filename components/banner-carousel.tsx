@@ -43,6 +43,18 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
     containerSize.height / 400
   ) : 1
   
+  // Get responsive multiplier for text scaling
+  const getResponsiveMultiplier = () => {
+    if (!hasMounted) return 1
+    const screenWidth = containerSize.width
+    if (screenWidth < 480) return 1.8 // Mobile phones
+    if (screenWidth < 768) return 1.4 // Small tablets
+    if (screenWidth < 1024) return 1.2 // Tablets
+    return 1 // Desktop
+  }
+  
+  const responsiveMultiplier = getResponsiveMultiplier()
+  
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden">
       <div
@@ -58,6 +70,9 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
       >
         {layout.map((el) => {
           if (el.type === "badge") {
+            const baseFontSize = parseFloat((el.style?.fontSize || '14px').replace('px', ''))
+            const responsiveFontSize = Math.max(baseFontSize * responsiveMultiplier, 12)
+            
             return (
               <div
                 key={el.id}
@@ -68,7 +83,7 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
                   width: el.width,
                   height: el.height,
                   zIndex: 10,
-                  fontSize: el.style?.fontSize || '14px',
+                  fontSize: `${responsiveFontSize}px`,
                   fontWeight: el.style?.fontWeight || 500,
                   padding: '6px 12px',
                 }}
@@ -78,6 +93,9 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
             )
           }
           if (el.type === "text") {
+            const baseFontSize = parseFloat((el.style?.fontSize || '32px').replace('px', ''))
+            const responsiveFontSize = Math.max(baseFontSize * responsiveMultiplier, 16)
+            
             return (
               <div
                 key={el.id}
@@ -88,7 +106,7 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
                   width: el.width,
                   height: el.height,
                   zIndex: 10,
-                  fontSize: el.style?.fontSize || '32px',
+                  fontSize: `${responsiveFontSize}px`,
                   fontWeight: el.style?.fontWeight || 700,
                   color: el.style?.color || '#ffffff',
                   textAlign: el.style?.textAlign || 'left',
@@ -105,6 +123,9 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
           }
           if (el.type === "icon") {
             const Icon = getIconComponent(el.icon)
+            const baseSize = el.width * 0.8
+            const responsiveSize = Math.max(baseSize * responsiveMultiplier, 20)
+            
             return (
               <div
                 key={el.id}
@@ -119,7 +140,7 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
               >
                 <Icon 
                   color="#fff" 
-                  size={el.width * 0.8} 
+                  size={responsiveSize} 
                   style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }} 
                 />
               </div>
