@@ -146,7 +146,7 @@ ${specialInstructions ? `📝 *Special Instructions:* ${specialInstructions}` : 
         <div className="bg-gray-50 p-4 rounded-lg mb-4">
           <div className="flex items-start gap-3">
             <img
-              src={product.image || "/placeholder.svg?height=80&width=80"}
+              src={product.images?.[0] || "/placeholder.svg?height=80&width=80"}
               alt={product.name}
               className="w-20 h-20 object-cover rounded-lg"
             />
