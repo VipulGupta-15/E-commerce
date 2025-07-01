@@ -1,4 +1,3 @@
-
 "use client"
 
 import type React from "react"
@@ -41,10 +40,8 @@ export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState(initialQuery)
   const [filters, setFilters] = useState<FilterOptions>({
     category: "",
-    priceRange: [0, 10000],
     colors: [],
     sizes: [],
-    sortBy: "relevance",
     search: initialQuery,
   })
 
@@ -55,10 +52,8 @@ export default function SearchPage() {
       
       if (currentFilters.search) params.append("search", currentFilters.search)
       if (currentFilters.category) params.append("category", currentFilters.category)
-      if (currentFilters.sortBy) params.append("sortBy", currentFilters.sortBy)
-      if (currentFilters.colors.length > 0) params.append("colors", currentFilters.colors.join(","))
-      if (currentFilters.sizes.length > 0) params.append("sizes", currentFilters.sizes.join(","))
-      params.append("priceRange", `${currentFilters.priceRange[0]},${currentFilters.priceRange[1]}`)
+      if (currentFilters.colors && currentFilters.colors.length > 0) params.append("colors", currentFilters.colors.join(","))
+      if (currentFilters.sizes && currentFilters.sizes.length > 0) params.append("sizes", currentFilters.sizes.join(","))
 
       const response = await fetch(`/api/products?${params}`)
       if (response.ok) {
@@ -125,10 +120,8 @@ export default function SearchPage() {
   const clearAllFilters = useCallback(() => {
     setFilters({
       category: "",
-      priceRange: [0, 10000],
       colors: [],
       sizes: [],
-      sortBy: "relevance",
       search: initialQuery,
     })
   }, [initialQuery])
@@ -136,9 +129,8 @@ export default function SearchPage() {
   const activeFiltersCount = useMemo(() => {
     return [
       filters.category,
-      ...filters.colors,
-      ...filters.sizes,
-      filters.priceRange[0] > 0 || filters.priceRange[1] < 10000 ? "price" : "",
+      ...(filters.colors || []),
+      ...(filters.sizes || []),
     ].filter(Boolean).length
   }, [filters])
 
@@ -179,7 +171,7 @@ export default function SearchPage() {
                   value={searchQuery}
                   onChange={handleSearchInputChange}
                   onFocus={handleSearchInputFocus}
-                  onKeyPress={(e) => e.key === "Enter" && handleSearch(searchQuery)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch(searchQuery)}
                   className="pr-12"
                 />
                 <Button
@@ -239,9 +231,7 @@ export default function SearchPage() {
                   <SheetTitle>Filters</SheetTitle>
                   <div className="mt-6">
                     <ProductFilters
-                      filters={filters}
-                      onFilterChange={handleFilterChange}
-                      onClearFilters={clearAllFilters}
+                      onFiltersChange={handleFilterChange}
                     />
                   </div>
                 </SheetContent>
@@ -316,9 +306,7 @@ export default function SearchPage() {
                   <SheetTitle>Filter Products</SheetTitle>
                   <div className="mt-6">
                     <ProductFilters
-                      filters={filters}
-                      onFilterChange={handleFilterChange}
-                      onClearFilters={clearAllFilters}
+                      onFiltersChange={handleFilterChange}
                     />
                   </div>
                 </SheetContent>
@@ -342,7 +330,7 @@ export default function SearchPage() {
                   </Button>
                 </Badge>
               )}
-              {filters.colors.map((color) => (
+              {(filters.colors || []).map((color) => (
                 <Badge key={color} variant="secondary" className="px-3 py-1">
                   {color}
                   <Button
@@ -351,14 +339,14 @@ export default function SearchPage() {
                     className="ml-1 h-4 w-4 p-0"
                     onClick={() => setFilters(prev => ({ 
                       ...prev, 
-                      colors: prev.colors.filter(c => c !== color) 
+                      colors: (prev.colors || []).filter(c => c !== color) 
                     }))}
                   >
                     <X className="h-3 w-3" />
                   </Button>
                 </Badge>
               ))}
-              {filters.sizes.map((size) => (
+              {(filters.sizes || []).map((size) => (
                 <Badge key={size} variant="secondary" className="px-3 py-1">
                   Size: {size}
                   <Button
@@ -367,7 +355,7 @@ export default function SearchPage() {
                     className="ml-1 h-4 w-4 p-0"
                     onClick={() => setFilters(prev => ({ 
                       ...prev, 
-                      sizes: prev.sizes.filter(s => s !== size) 
+                      sizes: (prev.sizes || []).filter(s => s !== size) 
                     }))}
                   >
                     <X className="h-3 w-3" />

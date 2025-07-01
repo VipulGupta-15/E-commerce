@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
@@ -193,6 +192,12 @@ export function SearchSuggestions({
                 "active:bg-gray-100 touch-manipulation",
                 selectedIndex === index && "bg-gray-50"
               )}
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  handleSuggestionClick(suggestion)
+                }
+              }}
             >
               <Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
               <span className="flex-1 truncate text-sm">

@@ -51,6 +51,7 @@ export default function HomePage() {
     sizes: [],
     search: "",
   })
+  const [showMobileSearchBar, setShowMobileSearchBar] = useState(false)
 
   const fetchData = useCallback(async () => {
     try {
@@ -164,7 +165,7 @@ export default function HomePage() {
                   value={searchQuery}
                   onChange={handleSearchInputChange}
                   onFocus={handleSearchInputFocus}
-                  onKeyPress={(e) => e.key === "Enter" && handleSearch(searchQuery)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch(searchQuery)}
                   className="pr-12"
                 />
                 <Button
@@ -210,7 +211,7 @@ export default function HomePage() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setShowSuggestions(!showSuggestions)}
+                onClick={() => setShowMobileSearchBar((prev) => !prev)}
               >
                 <Search className="h-5 w-5" />
               </Button>
@@ -233,8 +234,8 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Mobile Search */}
-        {showSuggestions && (
+        {/* Mobile Search Bar (always accessible when showMobileSearchBar is true) */}
+        {showMobileSearchBar && (
           <div className="md:hidden border-t border-white/20 p-4">
             <div className="relative flex gap-2">
               <Input
@@ -242,13 +243,14 @@ export default function HomePage() {
                 value={searchQuery}
                 onChange={handleSearchInputChange}
                 onFocus={handleSearchInputFocus}
-                onKeyPress={(e) => e.key === "Enter" && handleSearch(searchQuery)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch(searchQuery)}
                 className="flex-1"
+                autoFocus
               />
               <Button onClick={() => handleSearch(searchQuery)}>
                 <Search className="h-4 w-4" />
               </Button>
-              {searchQuery.length >= 2 && (
+              {searchQuery.length >= 2 && showSuggestions && (
                 <SearchSuggestions
                   query={searchQuery}
                   onSuggestionClick={handleSearch}
@@ -467,7 +469,7 @@ export default function HomePage() {
             <span className="text-xs font-medium">Categories</span>
           </button>
           <button
-            onClick={() => setShowSuggestions(!showSuggestions)}
+            onClick={() => setShowMobileSearchBar((prev) => !prev)}
             className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-colors"
           >
             <Search className="h-5 w-5" />

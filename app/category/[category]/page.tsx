@@ -203,6 +203,7 @@ export default function CategoryPage() {
                       value={searchQuery}
                       onChange={handleSearchInputChange}
                       onFocus={handleSearchInputFocus}
+                      onKeyDown={(e) => e.key === "Enter" && handleSearch(e)}
                       className="pl-10 pr-8 h-10"
                     />
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -261,6 +262,7 @@ export default function CategoryPage() {
                   value={searchQuery}
                   onChange={handleSearchInputChange}
                   onFocus={handleSearchInputFocus}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch(e)}
                   className="pl-10 pr-8"
                 />
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -412,7 +414,7 @@ export default function CategoryPage() {
             >
               {products.map((product, index) => (
                 <div key={product._id} className="animate-fade-in-up" style={{ animationDelay: `${index * 50}ms` }}>
-                  <ProductCard product={product} viewMode={viewMode} />
+                  <ProductCard product={product} />
                 </div>
               ))}
             </div>
