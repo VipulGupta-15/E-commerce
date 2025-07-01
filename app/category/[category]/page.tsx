@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { toast } from "@/hooks/use-toast"
-import { ArrowLeft, Filter, Search, Grid, List, Loader2, ShoppingBag, X, TrendingUp, User } from "lucide-react"
+import { ArrowLeft, Filter, Search, Grid, List, Loader2, ShoppingBag, X, TrendingUp } from "lucide-react"
 import { Footer } from "@/components/footer"
 
 export default function CategoryPage() {
@@ -157,9 +157,16 @@ export default function CategoryPage() {
   
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50/50 via-white to-purple-50/50">
+      {/* Floating Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-orange-200/20 rounded-full blur-3xl floating"></div>
+        <div className="absolute top-40 right-10 w-96 h-96 bg-purple-200/20 rounded-full blur-3xl floating-delayed"></div>
+        <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-pink-200/20 rounded-full blur-3xl floating"></div>
+      </div>
+
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
+      <header className="glass-header sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Mobile Header */}
           <div className="md:hidden py-3">
@@ -290,12 +297,12 @@ export default function CategoryPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button variant="outline" asChild className="bg-transparent">
-                <Link href="/">
+              <Link href="/">
+                <Button variant="outline" className="glass border-white/20 hover:bg-white/10">
                   <ShoppingBag className="h-4 w-4 mr-2" />
                   Continue Shopping
-                </Link>
-              </Button>
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -342,19 +349,19 @@ export default function CategoryPage() {
                 {/* Filter Button */}
                 <Sheet open={showFilters} onOpenChange={setShowFilters}>
                   <SheetTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
+                    <Button variant="outline" className="glass border-white/20 hover:bg-white/10 flex items-center gap-2">
                       <Filter className="h-4 w-4" />
                       Filters
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left" className="w-80">
+                  <SheetContent side="left" className="glass-modal border-0 w-80">
                     <SheetTitle>Filters</SheetTitle>
                     <ProductFilters onFiltersChange={handleFiltersChange} isLoading={isLoading} />
                   </SheetContent>
                 </Sheet>
 
                 {/* View Mode Toggle */}
-                <div className="hidden md:flex items-center gap-1 border rounded-lg p-1">
+                <div className="hidden md:flex items-center gap-1 glass border-white/20 rounded-lg p-1">
                   <Button
                     variant={viewMode === "grid" ? "default" : "ghost"}
                     size="sm"
@@ -432,7 +439,7 @@ export default function CategoryPage() {
 
       {/* Category Selector Sheet */}
       <Sheet open={showCategorySelector} onOpenChange={setShowCategorySelector}>
-        <SheetContent side="bottom" className="h-[500px]">
+        <SheetContent side="bottom" className="glass-modal border-0 h-[500px]">
           <SheetTitle>Choose Category</SheetTitle>
           <div className="p-4 h-full overflow-y-auto">
             <h3 className="text-lg font-semibold text-center mb-6">Choose Category</h3>
@@ -458,7 +465,7 @@ export default function CategoryPage() {
       </Sheet>
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 glass-nav border-t border-white/20 z-40">
         <div className="grid grid-cols-3 gap-1 p-2">
           <Link href="/" className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-colors">
             <ShoppingBag className="h-5 w-5" />
