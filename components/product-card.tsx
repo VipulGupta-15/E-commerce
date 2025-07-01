@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -7,248 +8,254 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { OrderModal } from "@/components/order-modal"
-import { Star, Eye, Zap, Truck } from "lucide-react"
+import { Star, Eye, Zap, Truck, Heart, ShoppingCart, Sparkles } from "lucide-react"
 
 interface ProductCardProps {
   product: Product
-  viewMode?: "grid" | "list"
+  featured?: boolean
 }
 
-export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
-  const [showOrderModal, setShowOrderModal] = useState(false)
-  const [imageError, setImageError] = useState(false)
+export function ProductCard({ product, featured = false }: ProductCardProps) {
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
+  const [isLiked, setIsLiked] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
 
-  // Generate realistic data
-  const discountPercentage = Math.floor(Math.random() * 60) + 10 // 10-70% discount
-  const originalPrice = Math.floor(product.price * (1 + discountPercentage / 100))
-  const rating = (Math.random() * 1.5 + 3.5).toFixed(1) // 3.5-5.0 rating
-  const reviewCount = Math.floor(Math.random() * 500) + 50 // 50-550 reviews
-  const isLowStock = (product.stock || 0) <= 5
-  const isOutOfStock = (product.stock || 0) === 0
-  const isFreeDelivery = Math.random() > 0.3 // 70% chance of free delivery
-
-  // Get proper product image with multiple fallbacks
-  const getProductImage = () => {
-    // Try images array first
-    if (product.images && product.images.length > 0 && !imageError) {
-      return product.images[0]
-    }
-
-    // Category-specific placeholder images
-    const categoryImages = {
-      Men: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=400&fit=crop&crop=center",
-      Women: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=400&h=400&fit=crop&crop=center",
-      Kids: "https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=400&h=400&fit=crop&crop=center",
-      Accessories: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop&crop=center",
-    }
-
-    return categoryImages[product.category as keyof typeof categoryImages] || categoryImages.Men
-  }
-
-  const imageUrl = getProductImage()
-
-  // Handle button clicks to prevent card click
-  const handleButtonClick = (e: React.MouseEvent) => {
+  const handleQuickOrder = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    setIsOrderModalOpen(true)
   }
 
-  if (viewMode === "list") {
-    return (
-      <>
-        <Link href={`/product/${product._id}`}>
-          <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group mb-4 cursor-pointer">
-            <div className="flex">
-              <div className="relative w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
-                <img
-                  src={imageUrl || "/placeholder.svg"}
-                  alt={product.name}
-                  className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
-                  onError={() => setImageError(true)}
-                  loading="lazy"
-                />
-                {product.featured && (
-                  <Badge className="absolute top-1 left-1 bg-orange-500 text-white text-xs px-1 py-0.5">
-                    <Zap className="h-2 w-2 mr-0.5" />
-                    Hot
-                  </Badge>
-                )}
-                {discountPercentage > 0 && (
-                  <Badge className="absolute top-1 right-1 bg-red-500 text-white text-xs px-1 py-0.5">
-                    {discountPercentage}% OFF
-                  </Badge>
-                )}
-              </div>
-
-              <CardContent className="flex-1 p-3 sm:p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm sm:text-base text-gray-900 mb-1 line-clamp-2 group-hover:text-orange-600 transition-colors">
-                      {product.name}
-                    </h3>
-                    <p className="text-gray-600 text-xs sm:text-sm mb-2 line-clamp-1">{product.description}</p>
-
-                    <div className="flex items-center gap-1 mb-2">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-3 w-3 ${
-                              i < Math.floor(Number(rating)) ? "text-yellow-400 fill-current" : "text-gray-300"
-                            }`}
-                          />
-                        ))}
-                        <span className="text-xs text-gray-600 ml-1">({rating})</span>
-                      </div>
-                      <span className="text-xs text-gray-500">• {reviewCount} reviews</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg sm:text-xl font-bold text-gray-900">
-                        ₹{product.price.toLocaleString()}
-                      </span>
-                      <span className="text-sm text-gray-500 line-through">₹{originalPrice.toLocaleString()}</span>
-                      <span className="text-xs text-green-600 font-medium">({discountPercentage}% off)</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <Badge variant={isLowStock ? "destructive" : "secondary"} className="text-xs px-2 py-0.5">
-                        {isOutOfStock ? "Out of Stock" : `${product.stock} left`}
-                      </Badge>
-                      {isFreeDelivery && (
-                        <Badge className="bg-green-100 text-green-800 text-xs px-2 py-0.5">
-                          <Truck className="h-2 w-2 mr-0.5" />
-                          Free Delivery
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button asChild variant="outline" size="sm" className="flex-1 h-8 text-xs bg-transparent" onClick={handleButtonClick}>
-                    <Link href={`/product/${product._id}`}>View Details</Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </div>
-          </Card>
-        </Link>
-
-        <OrderModal product={product} isOpen={showOrderModal} onClose={() => setShowOrderModal(false)} />
-      </>
-    )
+  const handleLike = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsLiked(!isLiked)
   }
 
-  // Grid view - Consistent mobile design
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+    }).format(price)
+  }
+
+  const isLowStock = (product.stock || 0) <= 5
+  const isOutOfStock = (product.stock || 0) === 0
+
   return (
     <>
-      <Link href={`/product/${product._id}`}>
-        <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer bg-white">
-          <div className="relative aspect-[3/4]">
-            <img
-              src={imageUrl || "/placeholder.svg"}
-              alt={product.name}
-              className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
-              onError={() => setImageError(true)}
-              loading="lazy"
-            />
+      <Card className={`product-card group relative overflow-hidden border-0 ${featured ? 'ring-2 ring-orange-300/50' : ''}`}>
+        {/* Background Glow Effect */}
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-100/20 via-transparent to-purple-100/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        
+        {/* Featured Badge */}
+        {featured && (
+          <div className="absolute top-3 left-3 z-20">
+            <Badge className="bg-gradient-to-r from-orange-500 to-pink-500 text-white border-0 shadow-lg animate-glow">
+              <Sparkles className="h-3 w-3 mr-1" />
+              Featured
+            </Badge>
+          </div>
+        )}
 
-            {/* Overlay with quick actions - Desktop only */}
-            <div className="hidden md:flex absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 items-center justify-center opacity-0 group-hover:opacity-100">
+        {/* Stock Status Badges */}
+        <div className="absolute top-3 right-3 z-20 flex flex-col gap-2">
+          {isOutOfStock && (
+            <Badge variant="destructive" className="shadow-lg">
+              Out of Stock
+            </Badge>
+          )}
+          {isLowStock && !isOutOfStock && (
+            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200 shadow-lg">
+              Low Stock
+            </Badge>
+          )}
+          
+          {/* Like Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-8 w-8 rounded-full glass ${isLiked ? 'text-red-500' : 'text-gray-400'} hover:text-red-500 transition-all duration-300`}
+            onClick={handleLike}
+          >
+            <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+          </Button>
+        </div>
+
+        <Link href={`/product/${product._id}`} className="block">
+          {/* Image Container */}
+          <div className="relative aspect-square overflow-hidden rounded-t-2xl bg-gradient-to-br from-gray-100 to-gray-200">
+            {!imageLoaded && (
+              <div className="absolute inset-0 shimmer rounded-t-2xl" />
+            )}
+            
+            {product.images && product.images.length > 0 ? (
+              <img
+                src={product.images[0]}
+                alt={product.name}
+                className={`product-image w-full h-full object-cover transition-all duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                onLoad={() => setImageLoaded(true)}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement
+                  target.src = `/placeholder.svg?height=300&width=300`
+                  setImageLoaded(true)
+                }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gradient-to-br from-gray-50 to-gray-100">
+                <div className="text-center">
+                  <Eye className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No Image</p>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Actions Overlay */}
+            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
               <div className="flex gap-2">
-                <Button size="icon" variant="secondary" className="bg-white/90 hover:bg-white h-8 w-8" onClick={handleButtonClick}>
+                <Button
+                  variant="glass"
+                  size="sm"
+                  className="text-white bg-white/20 hover:bg-white/30 backdrop-blur-sm border-white/30"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    // Quick view functionality can be added here
+                  }}
+                >
                   <Eye className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="glass"
+                  size="sm"
+                  className="text-white bg-orange-500/80 hover:bg-orange-500/90 backdrop-blur-sm border-orange-300/30"
+                  onClick={handleQuickOrder}
+                  disabled={isOutOfStock}
+                >
+                  <ShoppingCart className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            {/* Badges */}
-            <div className="absolute top-2 left-2 flex flex-col gap-1">
-              {product.featured && (
-                <Badge className="bg-orange-500 text-white text-xs px-1.5 py-0.5">
-                  <Zap className="h-2 w-2 mr-0.5" />
-                  Hot
-                </Badge>
-              )}
-              {discountPercentage > 0 && (
-                <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5">{discountPercentage}% OFF</Badge>
-              )}
-            </div>
-
-            {/* Stock status */}
-            {isOutOfStock && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                <Badge variant="destructive" className="text-sm">
-                  Out of Stock
-                </Badge>
+            {/* Price Tag */}
+            <div className="absolute bottom-3 right-3">
+              <div className="glass px-3 py-1 rounded-full">
+                <span className="text-lg font-bold text-gray-900">
+                  {formatPrice(product.price)}
+                </span>
               </div>
-            )}
+            </div>
           </div>
 
-          <CardContent className="p-3">
-            {/* Brand/Category */}
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-medium">{product.category}</p>
-
-            {/* Product Name */}
-            <h3 className="font-medium text-sm text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors mb-2 leading-tight">
-              {product.name}
-            </h3>
-
-            {/* Rating */}
-            <div className="flex items-center gap-1 mb-2">
-              <div className="flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-3 w-3 ${
-                      i < Math.floor(Number(rating)) ? "text-yellow-400 fill-current" : "text-gray-300"
-                    }`}
+          <CardContent className="p-6 space-y-4">
+            {/* Category Badge */}
+            <div className="flex items-center justify-between">
+              <Badge 
+                variant="outline" 
+                className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 transition-colors"
+              >
+                {product.category}
+              </Badge>
+              
+              {/* Rating Stars */}
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star 
+                    key={star} 
+                    className="h-3 w-3 fill-yellow-400 text-yellow-400" 
                   />
                 ))}
-                <span className="text-xs text-gray-600 ml-1 font-medium">({rating})</span>
+                <span className="text-xs text-gray-500 ml-1">(4.5)</span>
               </div>
-              <span className="text-xs text-gray-500">• {reviewCount}</span>
             </div>
 
-            {/* Pricing */}
-            <div className="mb-2">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm text-gray-400 line-through">₹{originalPrice.toLocaleString()}</span>
-                <span className="text-base font-bold text-gray-900">₹{product.price.toLocaleString()}</span>
-              </div>
-              <p className="text-xs text-green-600 font-medium">
-                Save ₹{(originalPrice - product.price).toLocaleString()} ({discountPercentage}% off)
+            {/* Product Title */}
+            <div>
+              <h3 className="font-bold text-lg text-gray-900 group-hover:text-orange-600 transition-colors duration-300 line-clamp-2">
+                {product.name}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                {product.description}
               </p>
             </div>
 
-            {/* Stock and Delivery Info - Mobile Responsive */}
-            <div className="flex items-center justify-between mb-3 gap-2">
-              <Badge variant={isLowStock ? "destructive" : "secondary"} className="text-xs px-2 py-0.5 flex-shrink-0">
-                {isOutOfStock ? "Out of Stock" : `${product.stock} left`}
-              </Badge>
-              {isFreeDelivery && (
-                <Badge className="bg-green-100 text-green-800 text-xs px-2 py-0.5 flex-shrink-0">
-                  <Truck className="h-3 w-3 mr-1" />
-                  <span className="hidden sm:inline">Free Delivery</span>
-                  <span className="sm:hidden">Free</span>
-                </Badge>
+            {/* Colors and Sizes */}
+            <div className="space-y-2">
+              {product.colors && product.colors.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">Colors:</span>
+                  <div className="flex gap-1">
+                    {product.colors.slice(0, 4).map((color, index) => (
+                      <div
+                        key={index}
+                        className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                        style={{ backgroundColor: color.toLowerCase() }}
+                        title={color}
+                      />
+                    ))}
+                    {product.colors.length > 4 && (
+                      <span className="text-xs text-gray-400">+{product.colors.length - 4}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {product.sizeOptions && product.sizeOptions.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">Sizes:</span>
+                  <div className="flex gap-1">
+                    {product.sizeOptions.slice(0, 4).map((size, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs px-2 py-0.5">
+                        {size}
+                      </Badge>
+                    ))}
+                    {product.sizeOptions.length > 4 && (
+                      <span className="text-xs text-gray-400">+{product.sizeOptions.length - 4}</span>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* Action Button - Only View */}
-            <Button
-              size="sm"
-              className="w-full h-8 text-xs bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50"
-              onClick={handleButtonClick}
-            >
-              View
-            </Button>
-          </CardContent>
-        </Card>
-      </Link>
+            {/* Features */}
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <div className="flex items-center gap-1">
+                <Truck className="h-3 w-3" />
+                <span>Free Delivery</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Zap className="h-3 w-3" />
+                <span>Fast Shipping</span>
+              </div>
+            </div>
 
-      <OrderModal product={product} isOpen={showOrderModal} onClose={() => setShowOrderModal(false)} />
+            {/* Action Button */}
+            <div className="pt-2">
+              <Button
+                variant="default"
+                className="w-full"
+                onClick={handleQuickOrder}
+                disabled={isOutOfStock}
+              >
+                {isOutOfStock ? (
+                  "Out of Stock"
+                ) : (
+                  <>
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Quick Order
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Link>
+      </Card>
+
+      <OrderModal
+        product={product}
+        isOpen={isOrderModalOpen}
+        onClose={() => setIsOrderModalOpen(false)}
+      />
     </>
   )
 }
