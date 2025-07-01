@@ -180,7 +180,8 @@ export default function HomePage() {
                     {category}
                   </Button>
                 </Link>
-              ))}</nav>
+              ))}
+            </nav>
 
             {/* Mobile Menu Button */}
             <div className="md:hidden flex items-center gap-2">

@@ -16,6 +16,12 @@ interface CategorySelectorProps {
 }
 
 export function CategorySelector({ categories, isOpen, onClose }: CategorySelectorProps) {
+  const handleCategoryClick = (href: string) => {
+    onClose()
+    // Force navigation to category page
+    window.location.href = href
+  }
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="bottom" className="h-[400px]">
@@ -24,15 +30,14 @@ export function CategorySelector({ categories, isOpen, onClose }: CategorySelect
         </SheetHeader>
         <div className="grid grid-cols-2 gap-4 mt-6">
           {categories.map((category) => (
-            <Link
+            <button
               key={category.name}
-              href={category.href}
-              onClick={onClose}
-              className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition-all duration-200 group"
+              onClick={() => handleCategoryClick(category.href)}
+              className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition-all duration-200 group w-full"
             >
               <span className="text-4xl group-hover:scale-110 transition-transform duration-200">{category.icon}</span>
               <span className="font-semibold text-gray-900 group-hover:text-orange-600">{category.name}</span>
-            </Link>
+            </button>
           ))}
         </div>
       </SheetContent>
