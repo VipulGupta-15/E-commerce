@@ -1,4 +1,3 @@
-
 "use client"
 
 import type React from "react"
@@ -473,8 +472,9 @@ export default function CategoryPage() {
           </button>
         </div>
       </div>
-
-      <Footer />
+      <div className="border-t text-center py-4 text-gray-500 text-sm">
+        © {new Date().getFullYear()} E-Commerce
+      </div>
     </div>
   )
 }
