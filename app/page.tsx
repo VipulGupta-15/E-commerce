@@ -8,6 +8,7 @@ import { ProductCard } from "@/components/product-card"
 import { ProductFilters } from "@/components/product-filters"
 import { BannerCarousel } from "@/components/banner-carousel"
 import { SearchSuggestions } from "@/components/search-suggestions"
+import { CategorySelector } from "@/components/category-selector"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
@@ -32,8 +33,6 @@ import {
   Shield
 } from "lucide-react"
 import { Footer } from "@/components/footer"
-
-const categories = ["Men", "Women", "Kids", "Accessories", "Footwear"]
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -171,13 +170,18 @@ export default function HomePage() {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-2">
-              {categories.map((category) => (
-                <Link key={category} href={`/category/${category.toLowerCase()}`}>
+              {[
+                { name: "Women", href: "/category/women" },
+                { name: "Men", href: "/category/men" },
+                { name: "Kids", href: "/category/kids" },
+                { name: "Accessories", href: "/category/accessories" },
+              ].map((category) => (
+                <Link key={category.name} href={category.href}>
                   <Button
                     variant="ghost"
                     className="text-sm hover:bg-orange-50 hover:text-orange-600"
                   >
-                    {category}
+                    {category.name}
                   </Button>
                 </Link>
               ))}
@@ -414,26 +418,16 @@ export default function HomePage() {
       </div>
 
       {/* Category Selector Sheet */}
-      <Sheet open={showCategorySelector} onOpenChange={setShowCategorySelector}>
-        <SheetContent side="bottom" className="glass-modal border-0 h-auto">
-          <SheetTitle>Choose Category</SheetTitle>
-          <div className="grid grid-cols-2 gap-3 mt-6">
-            {categories.map((category) => (
-              <Button
-                key={category}
-                variant="outline"
-                className="h-12 justify-start"
-                onClick={() => {
-                  setFilters((prev) => ({ ...prev, category }))
-                  setShowCategorySelector(false)
-                }}
-              >
-                {category}
-              </Button>
-            ))}
-          </div>
-        </SheetContent>
-      </Sheet>
+      <CategorySelector
+        categories={[
+          { name: "Women", href: "/category/women", icon: "👗" },
+          { name: "Men", href: "/category/men", icon: "👔" },
+          { name: "Kids", href: "/category/kids", icon: "🧸" },
+          { name: "Accessories", href: "/category/accessories", icon: "👜" },
+        ]}
+        isOpen={showCategorySelector}
+        onClose={() => setShowCategorySelector(false)}
+      />
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 glass-nav border-t border-white/20 z-40">

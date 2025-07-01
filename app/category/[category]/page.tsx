@@ -8,6 +8,7 @@ import type { Product, FilterOptions } from "@/lib/models"
 import { ProductCard } from "@/components/product-card"
 import { ProductFilters } from "@/components/product-filters"
 import { SearchSuggestions } from "@/components/search-suggestions"
+import { CategorySelector } from "@/components/category-selector"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
@@ -423,31 +424,11 @@ export default function CategoryPage() {
       </div>
 
       {/* Category Selector Sheet */}
-      <Sheet open={showCategorySelector} onOpenChange={setShowCategorySelector}>
-        <SheetContent side="bottom" className="glass-modal border-0 h-[500px]">
-          <SheetTitle>Choose Category</SheetTitle>
-          <div className="p-4 h-full overflow-y-auto">
-            <h3 className="text-lg font-semibold text-center mb-6">Choose Category</h3>
-            <div className="space-y-3">
-              {categories.map((cat) => (
-                <Link
-                  key={cat.name}
-                  href={cat.href}
-                  onClick={() => setShowCategorySelector(false)}
-                  className="flex items-center gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition-all duration-200 group"
-                >
-                  <div
-                    className={`w-12 h-12 rounded-full bg-gradient-to-r ${cat.color} flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-200`}
-                  >
-                    {cat.icon}
-                  </div>
-                  <span className="font-semibold text-gray-900 group-hover:text-orange-600">{cat.name}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <CategorySelector
+        categories={categories}
+        isOpen={showCategorySelector}
+        onClose={() => setShowCategorySelector(false)}
+      />
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 glass-nav border-t border-white/20 z-40">
