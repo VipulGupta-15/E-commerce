@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -8,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { OrderModal } from "@/components/order-modal"
-import { Star, Eye, Zap, Truck, Heart, ShoppingCart, Sparkles } from "lucide-react"
+import { Star, Eye, Zap, Truck, ShoppingCart, Sparkles } from "lucide-react"
 
 interface ProductCardProps {
   product: Product
@@ -17,19 +16,12 @@ interface ProductCardProps {
 
 export function ProductCard({ product, featured = false }: ProductCardProps) {
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
-  const [isLiked, setIsLiked] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
 
   const handleQuickOrder = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setIsOrderModalOpen(true)
-  }
-
-  const handleLike = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsLiked(!isLiked)
   }
 
   const formatPrice = (price: number) => {
@@ -71,16 +63,6 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
               Low Stock
             </Badge>
           )}
-          
-          {/* Like Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-8 w-8 rounded-full glass ${isLiked ? 'text-red-500' : 'text-gray-400'} hover:text-red-500 transition-all duration-300`}
-            onClick={handleLike}
-          >
-            <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-          </Button>
         </div>
 
         <Link href={`/product/${product._id}`} className="block">

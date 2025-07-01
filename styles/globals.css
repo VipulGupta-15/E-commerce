@@ -10,6 +10,15 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Hide scrollbar utility */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 @layer base {
@@ -91,4 +100,13 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Force hide scrollbars for all modal/dialog content */
+.DialogContent, .scrollbar-hide {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.DialogContent::-webkit-scrollbar, .scrollbar-hide::-webkit-scrollbar {
+  display: none !important;
 }

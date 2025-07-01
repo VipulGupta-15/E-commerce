@@ -45,10 +45,10 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filters, setFilters] = useState<FilterOptions>({
     category: "",
-    priceRange: [0, 10000],
+    minPrice: 0,
+    maxPrice: 10000,
     colors: [],
     sizes: [],
-    sortBy: "featured",
     search: "",
   })
 
@@ -101,10 +101,10 @@ export default function HomePage() {
   const clearAllFilters = useCallback(() => {
     setFilters({
       category: "",
-      priceRange: [0, 10000],
+      minPrice: 0,
+      maxPrice: 10000,
       colors: [],
       sizes: [],
-      sortBy: "featured",
       search: "",
     })
     setSearchQuery("")
@@ -166,6 +166,14 @@ export default function HomePage() {
                 >
                   <Search className="h-4 w-4" />
                 </Button>
+                {searchQuery.length >= 2 && showSearch && (
+                  <SearchSuggestions
+                    query={searchQuery}
+                    onSuggestionClick={handleSearch}
+                    onClose={() => setShowSearch(false)}
+                    navigateToSearch={true}
+                  />
+                )}
               </div>
             </div>
 
@@ -207,9 +215,7 @@ export default function HomePage() {
                   <SheetTitle>Filters & Categories</SheetTitle>
                   <div className="mt-6">
                     <ProductFilters
-                      filters={filters}
-                      onFilterChange={handleFilterChange}
-                      onClearFilters={clearAllFilters}
+                      onFiltersChange={handleFilterChange}
                     />
                   </div>
                 </SheetContent>
@@ -221,7 +227,7 @@ export default function HomePage() {
         {/* Mobile Search */}
         {showSearch && (
           <div className="md:hidden border-t border-white/20 p-4">
-            <div className="flex gap-2">
+            <div className="relative flex gap-2">
               <Input
                 placeholder="Search products..."
                 value={searchQuery}
@@ -233,6 +239,14 @@ export default function HomePage() {
               <Button onClick={() => handleSearch(searchQuery)}>
                 <Search className="h-4 w-4" />
               </Button>
+              {searchQuery.length >= 2 && (
+                <SearchSuggestions
+                  query={searchQuery}
+                  onSuggestionClick={handleSearch}
+                  onClose={() => setShowSearch(false)}
+                  navigateToSearch={true}
+                />
+              )}
             </div>
           </div>
         )}
@@ -323,7 +337,7 @@ export default function HomePage() {
 
             <div className="hidden md:flex items-center gap-3">
               {/* Active Filters */}
-              {(filters.category || filters.search || filters.colors.length > 0) && (
+              {(filters.category || filters.search || (filters.colors || []).length > 0) && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -361,9 +375,9 @@ export default function HomePage() {
                   <Button variant="outline" className="gap-2">
                     <Filter className="h-4 w-4" />
                     Filters
-                    {(filters.category || filters.search || filters.colors.length > 0) && (
+                    {(filters.category || filters.search || (filters.colors || []).length > 0) && (
                       <Badge variant="secondary" className="ml-1 px-1.5 py-0.5 text-xs">
-                        {[filters.category, filters.search, ...filters.colors].filter(Boolean).length}
+                        {[filters.category, filters.search, ...((filters.colors) ? filters.colors : [])].filter(Boolean).length}
                       </Badge>
                     )}
                   </Button>
@@ -372,9 +386,7 @@ export default function HomePage() {
                   <SheetTitle>Filter Products</SheetTitle>
                   <div className="mt-6">
                     <ProductFilters
-                      filters={filters}
-                      onFilterChange={handleFilterChange}
-                      onClearFilters={clearAllFilters}
+                      onFiltersChange={handleFilterChange}
                     />
                   </div>
                 </SheetContent>
@@ -454,16 +466,6 @@ export default function HomePage() {
           </button>
         </div>
       </div>
-
-      {/* Search Suggestions */}
-      {searchQuery.length >= 2 && showSearch && (
-        <SearchSuggestions
-          query={searchQuery}
-          onSuggestionClick={handleSearch}
-          onClose={() => setShowSearch(false)}
-          navigateToSearch={true}
-        />
-      )}
 
       {/* Footer */}
       <Footer />
