@@ -43,17 +43,27 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
     containerSize.height / 400
   ) : 1
   
-  // Get responsive multiplier for text scaling
-  const getResponsiveMultiplier = () => {
-    if (!hasMounted) return 1
+  // Get responsive font sizes based on screen width
+  const getResponsiveFontSize = (baseFontSize: number, elementType: 'badge' | 'text' | 'icon') => {
+    if (!hasMounted) return baseFontSize
+    
     const screenWidth = containerSize.width
-    if (screenWidth < 480) return 1.8 // Mobile phones
-    if (screenWidth < 768) return 1.4 // Small tablets
-    if (screenWidth < 1024) return 1.2 // Tablets
-    return 1 // Desktop
+    let multiplier = 1
+    
+    if (screenWidth < 480) {
+      // Mobile phones - larger text for readability
+      multiplier = elementType === 'badge' ? 1.6 : elementType === 'text' ? 1.8 : 1.4
+    } else if (screenWidth < 768) {
+      // Small tablets
+      multiplier = elementType === 'badge' ? 1.3 : elementType === 'text' ? 1.5 : 1.2
+    } else if (screenWidth < 1024) {
+      // Tablets
+      multiplier = elementType === 'badge' ? 1.1 : elementType === 'text' ? 1.3 : 1.1
+    }
+    
+    const minSize = elementType === 'badge' ? 12 : elementType === 'text' ? 16 : 20
+    return Math.max(baseFontSize * multiplier, minSize)
   }
-  
-  const responsiveMultiplier = getResponsiveMultiplier()
   
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden">
@@ -70,8 +80,16 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
       >
         {layout.map((el) => {
           if (el.type === "badge") {
-            const baseFontSize = parseFloat((el.style?.fontSize || '14px').replace('px', ''))
-            const responsiveFontSize = Math.max(baseFontSize * responsiveMultiplier, 12)
+            // Safe font size parsing - handle both string and number
+            let baseFontSize = 14
+            if (el.style?.fontSize) {
+              if (typeof el.style.fontSize === 'number') {
+                baseFontSize = el.style.fontSize
+              } else if (typeof el.style.fontSize === 'string') {
+                baseFontSize = parseFloat(el.style.fontSize.toString().replace(/[^0-9.]/g, '')) || 14
+              }
+            }
+            const responsiveFontSize = getResponsiveFontSize(baseFontSize, 'badge')
             
             return (
               <div
@@ -93,8 +111,16 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
             )
           }
           if (el.type === "text") {
-            const baseFontSize = parseFloat((el.style?.fontSize || '32px').replace('px', ''))
-            const responsiveFontSize = Math.max(baseFontSize * responsiveMultiplier, 16)
+            // Safe font size parsing - handle both string and number
+            let baseFontSize = 32
+            if (el.style?.fontSize) {
+              if (typeof el.style.fontSize === 'number') {
+                baseFontSize = el.style.fontSize
+              } else if (typeof el.style.fontSize === 'string') {
+                baseFontSize = parseFloat(el.style.fontSize.toString().replace(/[^0-9.]/g, '')) || 32
+              }
+            }
+            const responsiveFontSize = getResponsiveFontSize(baseFontSize, 'text')
             
             return (
               <div
@@ -124,7 +150,7 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
           if (el.type === "icon") {
             const Icon = getIconComponent(el.icon)
             const baseSize = el.width * 0.8
-            const responsiveSize = Math.max(baseSize * responsiveMultiplier, 20)
+            const responsiveSize = getResponsiveFontSize(baseSize, 'icon')
             
             return (
               <div
