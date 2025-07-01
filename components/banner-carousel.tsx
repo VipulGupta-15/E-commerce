@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Play } from "lucide-react"
 import type { Banner } from "@/lib/models"
 import { FaStar, FaHeart, FaBolt, FaGift } from "react-icons/fa"
 
 interface BannerCarouselProps {
   banners: Banner[]
+  className?: string
 }
 
 function getIconComponent(name: string) {
@@ -16,58 +17,11 @@ function getIconComponent(name: string) {
   return map[name] || FaStar
 }
 
-// Add this style block inside the BannerCarousel return (before the banner div)
-<style>{`
-  .banner-text {
-    font-size: clamp(10px, 2.5vw, 28px);
-    line-height: 1.15;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    white-space: normal;
-    word-break: break-word;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding: 0 2px;
-    margin-bottom: 2px;
-  }
-  .banner-badge {
-    font-size: clamp(8px, 2vw, 14px);
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-weight: 600;
-    background: rgba(255,255,255,0.18);
-    border: 1.5px solid #fff;
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    text-align: center;
-    margin-bottom: 4px;
-    white-space: normal;
-    word-break: break-word;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .banner-icon {
-    width: clamp(16px, 4vw, 28px);
-    height: clamp(16px, 4vw, 28px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 4px;
-  }
-  .carousel-dot { width: 12px; height: 12px; }
-  @media (max-width: 640px) {
-    .banner-text { font-size: clamp(8px, 4vw, 14px); padding: 0 1px; }
-    .banner-badge { font-size: clamp(7px, 3vw, 10px); padding: 1px 5px; border-radius: 8px; }
-    .banner-icon { width: 16px; height: 16px; }
-    .carousel-dot { width: 7px; height: 7px; }
-  }
-`}</style>
-
 function BannerLayoutRenderer({ layout }: { layout: any[] }) {
-  // Always render at design size, scale to fit parent (client only)
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = React.useState({ width: 1280, height: 320 })
   const [hasMounted, setHasMounted] = React.useState(false)
+  
   React.useEffect(() => {
     setHasMounted(true)
     function updateSize() {
@@ -82,11 +36,12 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
     window.addEventListener("resize", updateSize)
     return () => window.removeEventListener("resize", updateSize)
   }, [])
-  // Calculate scale to fit container (client only)
+  
   const scale = hasMounted ? Math.min(
     containerSize.width / 1280,
     containerSize.height / 320
   ) : 1
+  
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden">
       <div
@@ -106,20 +61,13 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
             return (
               <div
                 key={el.id}
-                className="banner-badge"
+                className="absolute flex items-center justify-center px-3 py-1 text-white bg-white/20 backdrop-blur-sm border border-white/30 rounded-full text-xs font-semibold shadow-lg"
                 style={{
-                  ...el.style,
-                  position: "absolute",
                   left: el.x,
                   top: el.y,
                   width: el.width,
                   height: el.height,
                   zIndex: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexDirection: "column",
-                  padding: undefined, // use class
                 }}
               >
                 {el.text}
@@ -130,19 +78,15 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
             return (
               <div
                 key={el.id}
-                className="banner-text"
+                className="absolute flex items-center justify-center text-white font-bold text-shadow-lg"
                 style={{
-                  ...el.style,
-                  position: "absolute",
                   left: el.x,
                   top: el.y,
                   width: el.width,
                   height: el.height,
                   zIndex: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  flexDirection: "column",
-                  padding: undefined, // use class
+                  fontSize: `${Math.max(14, 28 * scale)}px`,
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
                 }}
               >
                 {el.text}
@@ -154,21 +98,20 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
             return (
               <div
                 key={el.id}
-                className="banner-icon"
+                className="absolute flex items-center justify-center"
                 style={{
-                  position: "absolute",
                   left: el.x,
                   top: el.y,
                   width: el.width,
                   height: el.height,
                   zIndex: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexDirection: "column",
                 }}
               >
-                <Icon color="#fff" size={24} style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.08))" }} />
+                <Icon 
+                  color="#fff" 
+                  size={Math.max(16, 24 * scale)} 
+                  style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.3))" }} 
+                />
               </div>
             )
           }
@@ -178,14 +121,12 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
                 key={el.id}
                 src={el.imageUrl}
                 alt="Banner"
+                className="absolute object-contain rounded-lg"
                 style={{
-                  position: "absolute",
                   left: el.x,
                   top: el.y,
                   width: el.width,
                   height: el.height,
-                  objectFit: "contain",
-                  borderRadius: 8,
                   zIndex: 2,
                 }}
               />
@@ -198,9 +139,10 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
   )
 }
 
-export function BannerCarousel({ banners = [] }: BannerCarouselProps) {
+export function BannerCarousel({ banners = [], className = "" }: BannerCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+  const [isHovered, setIsHovered] = useState(false)
   const touchStartX = useRef<number | null>(null)
   const touchEndX = useRef<number | null>(null)
 
@@ -208,14 +150,14 @@ export function BannerCarousel({ banners = [] }: BannerCarouselProps) {
   const activeBanners = (banners || []).filter(banner => banner.isActive).sort((a, b) => a.order - b.order)
 
   useEffect(() => {
-    if (!isAutoPlaying || activeBanners.length <= 1) return
+    if (!isAutoPlaying || activeBanners.length <= 1 || isHovered) return
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % activeBanners.length)
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [isAutoPlaying, activeBanners.length])
+  }, [isAutoPlaying, activeBanners.length, isHovered])
 
   const goToPrevious = () => {
     setCurrentIndex((prev) => (prev - 1 + activeBanners.length) % activeBanners.length)
@@ -230,15 +172,27 @@ export function BannerCarousel({ banners = [] }: BannerCarouselProps) {
   }
 
   if (activeBanners.length === 0) {
-    return null
+    return (
+      <div className={`relative w-full overflow-hidden rounded-2xl ${className}`}>
+        <div className="aspect-[16/9] sm:aspect-[3/1] lg:aspect-[4/1] bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 flex items-center justify-center">
+          <div className="text-center text-white">
+            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+              <Play className="h-8 w-8" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">Welcome to StyleStore</h3>
+            <p className="text-white/80">Discover amazing fashion & lifestyle products</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const currentBanner = activeBanners[currentIndex]
 
   const getTextStyle = (banner: Banner) => {
     const baseClasses = [
-      banner.fontSize || "text-2xl",
-      banner.fontWeight || "font-normal",
+      banner.fontSize || "text-xl sm:text-2xl lg:text-3xl",
+      banner.fontWeight || "font-bold",
       banner.fontStyle || "not-italic",
       banner.textAlign || "text-center"
     ].join(" ")
@@ -249,7 +203,8 @@ export function BannerCarousel({ banners = [] }: BannerCarouselProps) {
         color: banner.textColor || "#ffffff",
         backgroundColor: banner.backgroundColor !== "transparent" ? banner.backgroundColor : "transparent",
         padding: banner.backgroundColor !== "transparent" ? "0.5rem 1rem" : "0",
-        borderRadius: banner.backgroundColor !== "transparent" ? "0.5rem" : "0",
+        borderRadius: banner.backgroundColor !== "transparent" ? "0.75rem" : "0",
+        textShadow: "2px 2px 4px rgba(0,0,0,0.5)",
       }
     }
   }
@@ -263,130 +218,156 @@ export function BannerCarousel({ banners = [] }: BannerCarouselProps) {
   // Touch/swipe handlers for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX
+    setIsHovered(true)
   }
+  
   const handleTouchMove = (e: React.TouchEvent) => {
     touchEndX.current = e.touches[0].clientX
   }
+  
   const handleTouchEnd = () => {
     if (touchStartX.current !== null && touchEndX.current !== null) {
       const dx = touchEndX.current - touchStartX.current
-      if (Math.abs(dx) > 40) {
+      if (Math.abs(dx) > 50) {
         if (dx > 0) goToPrevious()
         else goToNext()
       }
     }
     touchStartX.current = null
     touchEndX.current = null
+    setIsHovered(false)
   }
 
-  // Responsive aspect ratio: 4:1 desktop, 2.5:1 tablet, 2:1 mobile
-  // Use Tailwind + inline style fallback
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-lg"
-      style={{ aspectRatio: "4/1" }}
+    <div 
+      className={`relative w-full overflow-hidden rounded-2xl shadow-2xl ${className}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <style>{`
-        @media (max-width: 1024px) {
-          .responsive-banner { aspect-ratio: 2.5/1 !important; }
-        }
-        @media (max-width: 640px) {
-          .responsive-banner { aspect-ratio: 2/1 !important; }
-        }
-      `}</style>
+      {/* Main Banner Container with improved responsive aspect ratios */}
       <div
-        className="responsive-banner relative w-full h-full cursor-pointer"
+        className="relative w-full aspect-[16/9] sm:aspect-[3/1] lg:aspect-[4/1] cursor-pointer group"
         onClick={() => handleBannerClick(currentBanner)}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Use backgroundImage if available, otherwise fall back to imageUrl */}
+        {/* Background Image with overlay */}
         {(currentBanner.backgroundImage || currentBanner.imageUrl) && (
-          <img
-            src={currentBanner.backgroundImage || currentBanner.imageUrl}
-            alt={currentBanner.title}
-            className="w-full h-full object-cover absolute inset-0 rounded-lg"
-            style={{
-              objectFit: "cover",
-              objectPosition: `${currentBanner.backgroundOffset?.x ?? 50}% ${currentBanner.backgroundOffset?.y ?? 50}%`,
-              zIndex: 1,
-            }}
-          />
+          <>
+            <img
+              src={currentBanner.backgroundImage || currentBanner.imageUrl}
+              alt={currentBanner.title}
+              className="w-full h-full object-cover absolute inset-0 transition-transform duration-700 group-hover:scale-105"
+              style={{
+                objectFit: "cover",
+                objectPosition: `${currentBanner.backgroundOffset?.x ?? 50}% ${currentBanner.backgroundOffset?.y ?? 50}%`,
+                zIndex: 1,
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/20 z-2" />
+          </>
         )}
-        {/* Render layout if available */}
+
+        {/* Layout Renderer */}
         {Array.isArray(currentBanner.layout) && currentBanner.layout.length > 0 && (
           <div className="absolute inset-0 z-10 pointer-events-none">
             <BannerLayoutRenderer layout={currentBanner.layout} />
           </div>
         )}
-        {/* Fallback if no layout */}
+
+        {/* Fallback Content with improved responsive design */}
         {(!Array.isArray(currentBanner.layout) || currentBanner.layout.length === 0) && (
-          <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10">
-            <div className="text-center px-4">
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <div className="text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
               <h2 
-                className={`${getTextStyle(currentBanner).className} mb-2`}
+                className={`${getTextStyle(currentBanner).className} mb-2 sm:mb-4 leading-tight`}
                 style={getTextStyle(currentBanner).style}
               >
                 {currentBanner.title}
               </h2>
               {currentBanner.subtitle && (
                 <p 
-                  className={`${getTextStyle(currentBanner).className.replace(/text-\\d+xl/, 'text-lg')} opacity-90`}
+                  className="text-sm sm:text-lg lg:text-xl text-white/90 mb-4 sm:mb-6 leading-relaxed"
                   style={{
-                    ...getTextStyle(currentBanner).style,
-                    fontSize: '1.125rem',
+                    textShadow: "1px 1px 3px rgba(0,0,0,0.5)",
                   }}
                 >
                   {currentBanner.subtitle}
                 </p>
               )}
               {currentBanner.linkUrl && (
-                <p className="text-sm text-white/80 mt-2">
-                  Click to learn more →
-                </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full text-white text-sm sm:text-base font-medium hover:bg-white/30 transition-all duration-300">
+                  <span>Learn More</span>
+                  <ChevronRight className="h-4 w-4" />
+                </div>
               )}
             </div>
           </div>
         )}
+
+        {/* Loading indicator for images */}
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 z-0" />
       </div>
 
-      {/* Navigation Arrows */}
+      {/* Enhanced Navigation Arrows */}
       {activeBanners.length > 1 && (
         <>
           <Button
             variant="ghost"
             size="icon"
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 h-8 w-8"
-            onClick={goToPrevious}
+            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 h-10 w-10 sm:h-12 sm:w-12 shadow-lg backdrop-blur-sm border border-white/20 opacity-0 group-hover:opacity-100 transition-all duration-300"
+            onClick={(e) => {
+              e.stopPropagation()
+              goToPrevious()
+            }}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 h-8 w-8"
-            onClick={goToNext}
+            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 h-10 w-10 sm:h-12 sm:w-12 shadow-lg backdrop-blur-sm border border-white/20 opacity-0 group-hover:opacity-100 transition-all duration-300"
+            onClick={(e) => {
+              e.stopPropagation()
+              goToNext()
+            }}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
           </Button>
         </>
       )}
 
-      {/* Dots Indicator */}
+      {/* Enhanced Dots Indicator */}
       {activeBanners.length > 1 && (
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-3 z-20">
+        <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 sm:space-x-3 z-20">
           {activeBanners.map((_, index) => (
             <button
               key={index}
-              className={`carousel-dot rounded-full transition-colors border border-white focus:outline-none focus:ring-2 focus:ring-blue-400 ${
-                index === currentIndex ? "bg-white" : "bg-white/50"
+              className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 border border-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 ${
+                index === currentIndex 
+                  ? "bg-white scale-125 shadow-lg" 
+                  : "bg-white/50 hover:bg-white/70"
               }`}
-              style={{ touchAction: "manipulation" }}
-              onClick={() => goToSlide(index)}
+              onClick={(e) => {
+                e.stopPropagation()
+                goToSlide(index)
+              }}
               aria-label={`Go to banner ${index + 1}`}
             />
           ))}
+        </div>
+      )}
+
+      {/* Progress Bar */}
+      {activeBanners.length > 1 && isAutoPlaying && !isHovered && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20">
+          <div 
+            className="h-full bg-white transition-all duration-75 ease-linear"
+            style={{
+              width: `${((currentIndex + 1) / activeBanners.length) * 100}%`
+            }}
+          />
         </div>
       )}
     </div>

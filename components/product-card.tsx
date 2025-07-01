@@ -138,16 +138,16 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
             </div>
 
             {/* Price Tag */}
-            <div className="absolute bottom-3 right-3">
-              <div className="glass px-3 py-1 rounded-full">
-                <span className="text-lg font-bold text-gray-900">
+            <div className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3">
+              <div className="glass px-2 py-1 sm:px-3 rounded-full">
+                <span className="text-sm sm:text-base lg:text-lg font-bold text-gray-900">
                   {formatPrice(product.price)}
                 </span>
               </div>
             </div>
           </div>
 
-          <CardContent className="p-6 space-y-4">
+          <CardContent className="p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 lg:space-y-4">
             {/* Category Badge */}
             <div className="flex items-center justify-between">
               <Badge 
@@ -171,30 +171,30 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
 
             {/* Product Title */}
             <div>
-              <h3 className="font-bold text-lg text-gray-900 group-hover:text-orange-600 transition-colors duration-300 line-clamp-2">
+              <h3 className="font-bold text-sm sm:text-base lg:text-lg text-gray-900 group-hover:text-orange-600 transition-colors duration-300 line-clamp-2">
                 {product.name}
               </h3>
-              <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+              <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">
                 {product.description}
               </p>
             </div>
 
-            {/* Colors and Sizes */}
-            <div className="space-y-2">
+            {/* Colors and Sizes - Hidden on mobile for space */}
+            <div className="space-y-2 hidden sm:block">
               {product.colors && product.colors.length > 0 && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500">Colors:</span>
                   <div className="flex gap-1">
-                    {product.colors.slice(0, 4).map((color, index) => (
+                    {product.colors.slice(0, 3).map((color, index) => (
                       <div
                         key={index}
-                        className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                        className="w-3 h-3 lg:w-4 lg:h-4 rounded-full border-2 border-white shadow-sm"
                         style={{ backgroundColor: color.toLowerCase() }}
                         title={color}
                       />
                     ))}
-                    {product.colors.length > 4 && (
-                      <span className="text-xs text-gray-400">+{product.colors.length - 4}</span>
+                    {product.colors.length > 3 && (
+                      <span className="text-xs text-gray-400">+{product.colors.length - 3}</span>
                     )}
                   </div>
                 </div>
@@ -204,13 +204,13 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500">Sizes:</span>
                   <div className="flex gap-1">
-                    {product.sizeOptions.slice(0, 4).map((size, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs px-2 py-0.5">
+                    {product.sizeOptions.slice(0, 3).map((size, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs px-1.5 py-0.5">
                         {size}
                       </Badge>
                     ))}
-                    {product.sizeOptions.length > 4 && (
-                      <span className="text-xs text-gray-400">+{product.sizeOptions.length - 4}</span>
+                    {product.sizeOptions.length > 3 && (
+                      <span className="text-xs text-gray-400">+{product.sizeOptions.length - 3}</span>
                     )}
                   </div>
                 </div>
@@ -233,7 +233,7 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
             <div className="pt-2">
               <Button
                 variant="default"
-                className="w-full"
+                className="w-full text-xs sm:text-sm py-2"
                 onClick={handleQuickOrder}
                 disabled={isOutOfStock}
               >
@@ -241,8 +241,9 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
                   "Out of Stock"
                 ) : (
                   <>
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Quick Order
+                    <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Quick Order</span>
+                    <span className="sm:hidden">Order</span>
                   </>
                 )}
               </Button>

@@ -283,8 +283,8 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {featuredProducts.slice(0, 8).map((product, index) => (
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+              {featuredProducts.slice(0, 10).map((product, index) => (
                 <div key={product._id} className="stagger-item">
                   <ProductCard product={product} featured />
                 </div>
@@ -402,9 +402,9 @@ export default function HomePage() {
                 </Button>
               </div>
             ) : (
-              <div className={`grid gap-6 ${
+              <div className={`grid gap-4 sm:gap-6 ${
                 viewMode === "grid" 
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
+                  ? "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" 
                   : "grid-cols-1"
               }`}>
                 {products.map((product, index) => (
