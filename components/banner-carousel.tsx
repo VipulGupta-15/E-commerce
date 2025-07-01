@@ -43,7 +43,7 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
     containerSize.height / 400
   ) : 1
   
-  // Get responsive font sizes based on screen width
+  // Get responsive font sizes and positions based on screen width
   const getResponsiveFontSize = (baseFontSize: number, elementType: 'badge' | 'text' | 'icon') => {
     if (!hasMounted) return baseFontSize
     
@@ -51,18 +51,43 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
     let multiplier = 1
     
     if (screenWidth < 480) {
-      // Mobile phones - larger text for readability
-      multiplier = elementType === 'badge' ? 1.6 : elementType === 'text' ? 1.8 : 1.4
+      // Mobile phones - smaller text to fit better
+      multiplier = elementType === 'badge' ? 0.8 : elementType === 'text' ? 0.6 : 0.8
     } else if (screenWidth < 768) {
       // Small tablets
-      multiplier = elementType === 'badge' ? 1.3 : elementType === 'text' ? 1.5 : 1.2
+      multiplier = elementType === 'badge' ? 0.9 : elementType === 'text' ? 0.8 : 0.9
     } else if (screenWidth < 1024) {
       // Tablets
-      multiplier = elementType === 'badge' ? 1.1 : elementType === 'text' ? 1.3 : 1.1
+      multiplier = elementType === 'badge' ? 0.95 : elementType === 'text' ? 0.9 : 0.95
     }
     
-    const minSize = elementType === 'badge' ? 12 : elementType === 'text' ? 16 : 20
+    const minSize = elementType === 'badge' ? 10 : elementType === 'text' ? 12 : 16
     return Math.max(baseFontSize * multiplier, minSize)
+  }
+
+  // Get responsive position adjustments
+  const getResponsivePosition = (x: number, y: number, elementId: string) => {
+    if (!hasMounted) return { x, y }
+    
+    const screenWidth = containerSize.width
+    const scaleX = screenWidth / 1280
+    
+    if (screenWidth < 480) {
+      // Mobile - adjust positions to prevent overlap
+      const adjustments: Record<string, { x: number; y: number }> = {
+        'badge': { x: x * scaleX, y: y * 0.8 },
+        'mainText': { x: x * scaleX, y: y * 0.7 },
+        'subText': { x: x * scaleX, y: y * 0.8 },
+        'descText': { x: x * scaleX, y: y * 0.9 },
+        'icon': { x: x * scaleX, y: y * 0.6 }
+      }
+      return adjustments[elementId] || { x: x * scaleX, y: y * 0.8 }
+    } else if (screenWidth < 768) {
+      // Tablet - moderate adjustments
+      return { x: x * scaleX, y: y * 0.9 }
+    }
+    
+    return { x, y }
   }
   
   return (
@@ -90,20 +115,21 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
               }
             }
             const responsiveFontSize = getResponsiveFontSize(baseFontSize, 'badge')
+            const responsivePos = getResponsivePosition(el.x, el.y, el.id)
             
             return (
               <div
                 key={el.id}
                 className="absolute flex items-center justify-center text-white bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg text-sm font-medium shadow-lg"
                 style={{
-                  left: el.x,
-                  top: el.y,
-                  width: el.width,
-                  height: el.height,
+                  left: responsivePos.x,
+                  top: responsivePos.y,
+                  width: el.width * (containerSize.width < 480 ? 0.8 : 1),
+                  height: el.height * (containerSize.width < 480 ? 0.8 : 1),
                   zIndex: 10,
                   fontSize: `${responsiveFontSize}px`,
                   fontWeight: el.style?.fontWeight || 500,
-                  padding: '6px 12px',
+                  padding: containerSize.width < 480 ? '4px 8px' : '6px 12px',
                 }}
               >
                 {el.text}
@@ -121,23 +147,24 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
               }
             }
             const responsiveFontSize = getResponsiveFontSize(baseFontSize, 'text')
+            const responsivePos = getResponsivePosition(el.x, el.y, el.id)
             
             return (
               <div
                 key={el.id}
                 className="absolute text-white font-bold"
                 style={{
-                  left: el.x,
-                  top: el.y,
-                  width: el.width,
-                  height: el.height,
+                  left: responsivePos.x,
+                  top: responsivePos.y,
+                  width: el.width * (containerSize.width < 480 ? 1.2 : 1),
+                  height: el.height * (containerSize.width < 480 ? 0.8 : 1),
                   zIndex: 10,
                   fontSize: `${responsiveFontSize}px`,
                   fontWeight: el.style?.fontWeight || 700,
                   color: el.style?.color || '#ffffff',
                   textAlign: el.style?.textAlign || 'left',
-                  letterSpacing: el.style?.letterSpacing || '0.5px',
-                  lineHeight: '1.2',
+                  letterSpacing: containerSize.width < 480 ? '0.2px' : (el.style?.letterSpacing || '0.5px'),
+                  lineHeight: containerSize.width < 480 ? '1.0' : '1.2',
                   display: 'flex',
                   alignItems: 'center',
                   textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
@@ -151,16 +178,17 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
             const Icon = getIconComponent(el.icon)
             const baseSize = el.width * 0.8
             const responsiveSize = getResponsiveFontSize(baseSize, 'icon')
+            const responsivePos = getResponsivePosition(el.x, el.y, el.id)
             
             return (
               <div
                 key={el.id}
                 className="absolute flex items-center justify-center"
                 style={{
-                  left: el.x,
-                  top: el.y,
-                  width: el.width,
-                  height: el.height,
+                  left: responsivePos.x,
+                  top: responsivePos.y,
+                  width: el.width * (containerSize.width < 480 ? 0.7 : 1),
+                  height: el.height * (containerSize.width < 480 ? 0.7 : 1),
                   zIndex: 10,
                 }}
               >
