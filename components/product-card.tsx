@@ -45,7 +45,7 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
 
   return (
     <>
-      <Card className={`product-card group relative overflow-hidden border-0 ${featured ? 'ring-2 ring-orange-300/50' : ''}`}>
+      <Card className={`product-card group relative overflow-hidden border-0 h-full flex flex-col ${featured ? 'ring-2 ring-orange-300/50' : ''}`}>
         {/* Background Glow Effect */}
         <div className="absolute inset-0 bg-gradient-to-br from-orange-100/20 via-transparent to-purple-100/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         
@@ -147,7 +147,7 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
             </div>
           </div>
 
-          <CardContent className="p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 lg:space-y-4">
+          <CardContent className="p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 lg:space-y-4 flex flex-col h-full">
             {/* Category Badge */}
             <div className="flex items-center justify-between">
               <Badge 
@@ -169,8 +169,8 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
               </div>
             </div>
 
-            {/* Product Title */}
-            <div>
+            {/* Product Title - Fixed height */}
+            <div className="min-h-[4rem] sm:min-h-[5rem]">
               <h3 className="font-bold text-sm sm:text-base lg:text-lg text-gray-900 group-hover:text-orange-600 transition-colors duration-300 line-clamp-2">
                 {product.name}
               </h3>
@@ -179,42 +179,52 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
               </p>
             </div>
 
-            {/* Colors and Sizes - Hidden on mobile for space */}
-            <div className="space-y-2 hidden sm:block">
-              {product.colors && product.colors.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">Colors:</span>
-                  <div className="flex gap-1">
-                    {product.colors.slice(0, 3).map((color, index) => (
-                      <div
-                        key={index}
-                        className="w-3 h-3 lg:w-4 lg:h-4 rounded-full border-2 border-white shadow-sm"
-                        style={{ backgroundColor: color.toLowerCase() }}
-                        title={color}
-                      />
-                    ))}
-                    {product.colors.length > 3 && (
-                      <span className="text-xs text-gray-400">+{product.colors.length - 3}</span>
-                    )}
-                  </div>
-                </div>
-              )}
+            {/* Colors and Sizes - Hidden on mobile for space, fixed height for consistency */}
+            <div className="space-y-2 hidden sm:block min-h-[3.5rem]">
+              {/* Colors Section - Always reserve space */}
+              <div className="flex items-center gap-2 min-h-[1.5rem]">
+                {product.colors && product.colors.length > 0 ? (
+                  <>
+                    <span className="text-xs text-gray-500">Colors:</span>
+                    <div className="flex gap-1">
+                      {product.colors.slice(0, 3).map((color, index) => (
+                        <div
+                          key={index}
+                          className="w-3 h-3 lg:w-4 lg:h-4 rounded-full border-2 border-white shadow-sm"
+                          style={{ backgroundColor: color.toLowerCase() }}
+                          title={color}
+                        />
+                      ))}
+                      {product.colors.length > 3 && (
+                        <span className="text-xs text-gray-400">+{product.colors.length - 3}</span>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-xs text-gray-400">Colors: Not specified</div>
+                )}
+              </div>
 
-              {product.sizeOptions && product.sizeOptions.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">Sizes:</span>
-                  <div className="flex gap-1">
-                    {product.sizeOptions.slice(0, 3).map((size, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs px-1.5 py-0.5">
-                        {size}
-                      </Badge>
-                    ))}
-                    {product.sizeOptions.length > 3 && (
-                      <span className="text-xs text-gray-400">+{product.sizeOptions.length - 3}</span>
-                    )}
-                  </div>
-                </div>
-              )}
+              {/* Sizes Section - Always reserve space */}
+              <div className="flex items-center gap-2 min-h-[1.5rem]">
+                {product.sizeOptions && product.sizeOptions.length > 0 ? (
+                  <>
+                    <span className="text-xs text-gray-500">Sizes:</span>
+                    <div className="flex gap-1">
+                      {product.sizeOptions.slice(0, 3).map((size, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs px-1.5 py-0.5">
+                          {size}
+                        </Badge>
+                      ))}
+                      {product.sizeOptions.length > 3 && (
+                        <span className="text-xs text-gray-400">+{product.sizeOptions.length - 3}</span>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-xs text-gray-400">Sizes: One size fits all</div>
+                )}
+              </div>
             </div>
 
             {/* Features */}
@@ -229,8 +239,8 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
               </div>
             </div>
 
-            {/* Action Button */}
-            <div className="pt-2">
+            {/* Action Button - Push to bottom */}
+            <div className="pt-2 mt-auto">
               <Button
                 variant="default"
                 className="w-full text-xs sm:text-sm py-2"
