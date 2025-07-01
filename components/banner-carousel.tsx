@@ -38,188 +38,322 @@ function BannerLayoutRenderer({ layout }: { layout: any[] }) {
     return () => window.removeEventListener("resize", updateSize)
   }, [])
   
-  const scale = hasMounted ? Math.min(
-    containerSize.width / 1280,
-    containerSize.height / 400
-  ) : 1
+  // Get responsive scaling and positioning
+  const getResponsiveLayout = () => {
+    if (!hasMounted) return { isMobile: false, isTablet: false, scale: 1 }
+    
+    const width = containerSize.width
+    const isMobile = width < 640
+    const isTablet = width >= 640 && width < 1024
+    const isDesktop = width >= 1024
+    
+    let scale = 1
+    if (isMobile) scale = 0.5
+    else if (isTablet) scale = 0.7
+    else scale = Math.min(width / 1280, 1)
+    
+    return { isMobile, isTablet, isDesktop, scale }
+  }
   
-  // Get responsive font sizes and positions based on screen width
-  const getResponsiveFontSize = (baseFontSize: number, elementType: 'badge' | 'text' | 'icon') => {
-    if (!hasMounted) return baseFontSize
-    
-    const screenWidth = containerSize.width
-    let multiplier = 1
-    
-    if (screenWidth < 480) {
-      // Mobile phones - smaller text to fit better
-      multiplier = elementType === 'badge' ? 0.8 : elementType === 'text' ? 0.6 : 0.8
-    } else if (screenWidth < 768) {
-      // Small tablets
-      multiplier = elementType === 'badge' ? 0.9 : elementType === 'text' ? 0.8 : 0.9
-    } else if (screenWidth < 1024) {
-      // Tablets
-      multiplier = elementType === 'badge' ? 0.95 : elementType === 'text' ? 0.9 : 0.95
-    }
-    
-    const minSize = elementType === 'badge' ? 10 : elementType === 'text' ? 12 : 16
-    return Math.max(baseFontSize * multiplier, minSize)
-  }
-
-  // Get responsive position adjustments
-  const getResponsivePosition = (x: number, y: number, elementId: string) => {
-    if (!hasMounted) return { x, y }
-    
-    const screenWidth = containerSize.width
-    const scaleX = screenWidth / 1280
-    
-    if (screenWidth < 480) {
-      // Mobile - adjust positions to prevent overlap
-      const adjustments: Record<string, { x: number; y: number }> = {
-        'badge': { x: x * scaleX, y: y * 0.8 },
-        'mainText': { x: x * scaleX, y: y * 0.7 },
-        'subText': { x: x * scaleX, y: y * 0.8 },
-        'descText': { x: x * scaleX, y: y * 0.9 },
-        'icon': { x: x * scaleX, y: y * 0.6 }
-      }
-      return adjustments[elementId] || { x: x * scaleX, y: y * 0.8 }
-    } else if (screenWidth < 768) {
-      // Tablet - moderate adjustments
-      return { x: x * scaleX, y: y * 0.9 }
-    }
-    
-    return { x, y }
-  }
+  const { isMobile, isTablet, isDesktop, scale } = getResponsiveLayout()
   
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden">
-      <div
-        style={{
-          width: 1280,
-          height: 400,
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
-          position: "absolute",
-          top: 0,
-          left: 0,
-        }}
-      >
-        {layout.map((el) => {
-          if (el.type === "badge") {
-            // Safe font size parsing - handle both string and number
-            let baseFontSize = 14
-            if (el.style?.fontSize) {
-              if (typeof el.style.fontSize === 'number') {
-                baseFontSize = el.style.fontSize
-              } else if (typeof el.style.fontSize === 'string') {
-                baseFontSize = parseFloat(el.style.fontSize.toString().replace(/[^0-9.]/g, '')) || 14
-              }
+      {isMobile ? (
+        // Mobile Layout - Completely redesigned for mobile
+        <div className="absolute inset-0 p-4 flex flex-col justify-center">
+          {layout.map((el) => {
+            if (el.type === "badge") {
+              return (
+                <div
+                  key={el.id}
+                  className="inline-flex items-center justify-center text-white bg-white/20 backdrop-blur-sm border border-white/30 rounded-full text-xs font-medium shadow-lg mb-2 self-start"
+                  style={{
+                    padding: '4px 12px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    maxWidth: '120px'
+                  }}
+                >
+                  {el.text}
+                </div>
+              )
             }
-            const responsiveFontSize = getResponsiveFontSize(baseFontSize, 'badge')
-            const responsivePos = getResponsivePosition(el.x, el.y, el.id)
-            
-            return (
-              <div
-                key={el.id}
-                className="absolute flex items-center justify-center text-white bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg text-sm font-medium shadow-lg"
-                style={{
-                  left: responsivePos.x,
-                  top: responsivePos.y,
-                  width: el.width * (containerSize.width < 480 ? 0.8 : 1),
-                  height: el.height * (containerSize.width < 480 ? 0.8 : 1),
-                  zIndex: 10,
-                  fontSize: `${responsiveFontSize}px`,
-                  fontWeight: el.style?.fontWeight || 500,
-                  padding: containerSize.width < 480 ? '4px 8px' : '6px 12px',
-                }}
-              >
-                {el.text}
-              </div>
-            )
-          }
-          if (el.type === "text") {
-            // Safe font size parsing - handle both string and number
-            let baseFontSize = 32
-            if (el.style?.fontSize) {
-              if (typeof el.style.fontSize === 'number') {
-                baseFontSize = el.style.fontSize
-              } else if (typeof el.style.fontSize === 'string') {
-                baseFontSize = parseFloat(el.style.fontSize.toString().replace(/[^0-9.]/g, '')) || 32
+            if (el.type === "text") {
+              // Determine text hierarchy for mobile
+              const isMainText = el.text && (el.text.includes('BRAND') || el.text.includes('FEST') || el.style?.fontSize > 30)
+              const isSubText = el.text && (el.text.includes('%') || el.text.includes('OFF') || el.text.includes('Min'))
+              const isDescText = !isMainText && !isSubText
+              
+              let mobileStyles = {}
+              if (isMainText) {
+                mobileStyles = {
+                  fontSize: '20px',
+                  fontWeight: 800,
+                  lineHeight: '1.1',
+                  marginBottom: '4px',
+                  letterSpacing: '0.5px'
+                }
+              } else if (isSubText) {
+                mobileStyles = {
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  lineHeight: '1.2',
+                  marginBottom: '2px',
+                  letterSpacing: '0.3px'
+                }
+              } else {
+                mobileStyles = {
+                  fontSize: '12px',
+                  fontWeight: 400,
+                  lineHeight: '1.3',
+                  marginBottom: '8px',
+                  opacity: 0.9
+                }
               }
+              
+              return (
+                <div
+                  key={el.id}
+                  className="text-white"
+                  style={{
+                    ...mobileStyles,
+                    color: el.style?.color || '#ffffff',
+                    textShadow: '1px 1px 3px rgba(0,0,0,0.7)',
+                    maxWidth: '90%'
+                  }}
+                >
+                  {el.text}
+                </div>
+              )
             }
-            const responsiveFontSize = getResponsiveFontSize(baseFontSize, 'text')
-            const responsivePos = getResponsivePosition(el.x, el.y, el.id)
-            
-            return (
-              <div
-                key={el.id}
-                className="absolute text-white font-bold"
-                style={{
-                  left: responsivePos.x,
-                  top: responsivePos.y,
-                  width: el.width * (containerSize.width < 480 ? 1.2 : 1),
-                  height: el.height * (containerSize.width < 480 ? 0.8 : 1),
-                  zIndex: 10,
-                  fontSize: `${responsiveFontSize}px`,
-                  fontWeight: el.style?.fontWeight || 700,
-                  color: el.style?.color || '#ffffff',
-                  textAlign: el.style?.textAlign || 'left',
-                  letterSpacing: containerSize.width < 480 ? '0.2px' : (el.style?.letterSpacing || '0.5px'),
-                  lineHeight: containerSize.width < 480 ? '1.0' : '1.2',
-                  display: 'flex',
-                  alignItems: 'center',
-                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-                }}
-              >
-                {el.text}
-              </div>
-            )
-          }
-          if (el.type === "icon") {
-            const Icon = getIconComponent(el.icon)
-            const baseSize = el.width * 0.8
-            const responsiveSize = getResponsiveFontSize(baseSize, 'icon')
-            const responsivePos = getResponsivePosition(el.x, el.y, el.id)
-            
-            return (
-              <div
-                key={el.id}
-                className="absolute flex items-center justify-center"
-                style={{
-                  left: responsivePos.x,
-                  top: responsivePos.y,
-                  width: el.width * (containerSize.width < 480 ? 0.7 : 1),
-                  height: el.height * (containerSize.width < 480 ? 0.7 : 1),
-                  zIndex: 10,
-                }}
-              >
-                <Icon 
-                  color="#fff" 
-                  size={responsiveSize} 
-                  style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }} 
+            if (el.type === "icon") {
+              const Icon = getIconComponent(el.icon)
+              return (
+                <div
+                  key={el.id}
+                  className="absolute top-4 right-4"
+                >
+                  <Icon 
+                    color="#fff" 
+                    size={20} 
+                    style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.5))" }} 
+                  />
+                </div>
+              )
+            }
+            return null
+          })}
+        </div>
+      ) : isTablet ? (
+        // Tablet Layout - Scaled and repositioned
+        <div className="absolute inset-0 p-6">
+          <div
+            style={{
+              transform: `scale(${scale})`,
+              transformOrigin: "top left",
+              width: '100%',
+              height: '100%'
+            }}
+          >
+            {layout.map((el) => {
+              if (el.type === "badge") {
+                return (
+                  <div
+                    key={el.id}
+                    className="absolute flex items-center justify-center text-white bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg font-medium shadow-lg"
+                    style={{
+                      left: el.x * 0.8,
+                      top: el.y * 0.8,
+                      width: el.width * 0.9,
+                      height: el.height * 0.9,
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      padding: '5px 10px',
+                    }}
+                  >
+                    {el.text}
+                  </div>
+                )
+              }
+              if (el.type === "text") {
+                let baseFontSize = 24
+                if (el.style?.fontSize) {
+                  if (typeof el.style.fontSize === 'number') {
+                    baseFontSize = el.style.fontSize
+                  } else if (typeof el.style.fontSize === 'string') {
+                    baseFontSize = parseFloat(el.style.fontSize.toString().replace(/[^0-9.]/g, '')) || 24
+                  }
+                }
+                
+                return (
+                  <div
+                    key={el.id}
+                    className="absolute text-white font-bold"
+                    style={{
+                      left: el.x * 0.8,
+                      top: el.y * 0.8,
+                      width: el.width * 1.1,
+                      fontSize: `${baseFontSize * 0.8}px`,
+                      fontWeight: el.style?.fontWeight || 700,
+                      color: el.style?.color || '#ffffff',
+                      lineHeight: '1.2',
+                      letterSpacing: '0.3px',
+                      textShadow: '2px 2px 4px rgba(0,0,0,0.6)',
+                    }}
+                  >
+                    {el.text}
+                  </div>
+                )
+              }
+              if (el.type === "icon") {
+                const Icon = getIconComponent(el.icon)
+                return (
+                  <div
+                    key={el.id}
+                    className="absolute flex items-center justify-center"
+                    style={{
+                      left: el.x * 0.8,
+                      top: el.y * 0.8,
+                      width: el.width * 0.8,
+                      height: el.height * 0.8,
+                    }}
+                  >
+                    <Icon 
+                      color="#fff" 
+                      size={24} 
+                      style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }} 
+                    />
+                  </div>
+                )
+              }
+              return null
+            })}
+          </div>
+        </div>
+      ) : (
+        // Desktop Layout - Original scaled layout
+        <div
+          style={{
+            width: 1280,
+            height: 400,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+            position: "absolute",
+            top: 0,
+            left: 0,
+          }}
+        >
+          {layout.map((el) => {
+            if (el.type === "badge") {
+              let baseFontSize = 14
+              if (el.style?.fontSize) {
+                if (typeof el.style.fontSize === 'number') {
+                  baseFontSize = el.style.fontSize
+                } else if (typeof el.style.fontSize === 'string') {
+                  baseFontSize = parseFloat(el.style.fontSize.toString().replace(/[^0-9.]/g, '')) || 14
+                }
+              }
+              
+              return (
+                <div
+                  key={el.id}
+                  className="absolute flex items-center justify-center text-white bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg text-sm font-medium shadow-lg"
+                  style={{
+                    left: el.x,
+                    top: el.y,
+                    width: el.width,
+                    height: el.height,
+                    zIndex: 10,
+                    fontSize: `${baseFontSize}px`,
+                    fontWeight: el.style?.fontWeight || 500,
+                    padding: '6px 12px',
+                  }}
+                >
+                  {el.text}
+                </div>
+              )
+            }
+            if (el.type === "text") {
+              let baseFontSize = 32
+              if (el.style?.fontSize) {
+                if (typeof el.style.fontSize === 'number') {
+                  baseFontSize = el.style.fontSize
+                } else if (typeof el.style.fontSize === 'string') {
+                  baseFontSize = parseFloat(el.style.fontSize.toString().replace(/[^0-9.]/g, '')) || 32
+                }
+              }
+              
+              return (
+                <div
+                  key={el.id}
+                  className="absolute text-white font-bold"
+                  style={{
+                    left: el.x,
+                    top: el.y,
+                    width: el.width,
+                    height: el.height,
+                    zIndex: 10,
+                    fontSize: `${baseFontSize}px`,
+                    fontWeight: el.style?.fontWeight || 700,
+                    color: el.style?.color || '#ffffff',
+                    textAlign: el.style?.textAlign || 'left',
+                    letterSpacing: el.style?.letterSpacing || '0.5px',
+                    lineHeight: '1.2',
+                    display: 'flex',
+                    alignItems: 'center',
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+                  }}
+                >
+                  {el.text}
+                </div>
+              )
+            }
+            if (el.type === "icon") {
+              const Icon = getIconComponent(el.icon)
+              const iconSize = el.width * 0.8
+              
+              return (
+                <div
+                  key={el.id}
+                  className="absolute flex items-center justify-center"
+                  style={{
+                    left: el.x,
+                    top: el.y,
+                    width: el.width,
+                    height: el.height,
+                    zIndex: 10,
+                  }}
+                >
+                  <Icon 
+                    color="#fff" 
+                    size={iconSize} 
+                    style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }} 
+                  />
+                </div>
+              )
+            }
+            if (el.type === "image") {
+              return el.imageUrl ? (
+                <img
+                  key={el.id}
+                  src={el.imageUrl}
+                  alt="Banner"
+                  className="absolute object-cover rounded-lg shadow-lg"
+                  style={{
+                    left: el.x,
+                    top: el.y,
+                    width: el.width,
+                    height: el.height,
+                    zIndex: 10,
+                  }}
                 />
-              </div>
-            )
-          }
-          if (el.type === "image") {
-            return el.imageUrl ? (
-              <img
-                key={el.id}
-                src={el.imageUrl}
-                alt="Banner"
-                className="absolute object-cover rounded-lg shadow-lg"
-                style={{
-                  left: el.x,
-                  top: el.y,
-                  width: el.width,
-                  height: el.height,
-                  zIndex: 10,
-                }}
-              />
-            ) : null
-          }
-          return null
-        })}
-      </div>
+              ) : null
+            }
+            return null
+          })}
+        </div>
+      )}
     </div>
   )
 }
