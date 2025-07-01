@@ -238,11 +238,11 @@ export default function HomePage() {
       </header>
 
       {/* Hero Banner */}
-      <section className="relative">
+      <section className="relative py-4 sm:py-6 lg:py-8">
         {banners.length > 0 && (
           <BannerCarousel 
             banners={banners} 
-            className="h-[50vh] md:h-[60vh] lg:h-[70vh]" 
+            className=""
           />
         )}
       </section>
