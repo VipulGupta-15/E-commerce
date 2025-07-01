@@ -39,7 +39,7 @@ export default function HomePage() {
   const [banners, setBanners] = useState<Banner[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
-  const [showSearch, setShowSearch] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [showCategorySelector, setShowCategorySelector] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [searchQuery, setSearchQuery] = useState("")
@@ -85,14 +85,23 @@ export default function HomePage() {
     fetchData()
   }, [fetchData])
 
-  const handleSearch = useCallback(
-    (query: string) => {
-      if (query.trim()) {
-        window.location.href = `/search?q=${encodeURIComponent(query.trim())}`
-      }
-    },
-    []
-  )
+  const handleSearch = (query: string) => {
+    if (query.trim()) {
+      window.location.href = `/search?q=${encodeURIComponent(query.trim())}`
+    }
+  }
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchQuery(value)
+    setShowSuggestions(value.length >= 2)
+  }
+
+  const handleSearchInputFocus = () => {
+    if (searchQuery.length >= 2) {
+      setShowSuggestions(true)
+    }
+  }
 
   const handleFilterChange = useCallback((newFilters: FilterOptions) => {
     setFilters(newFilters)
@@ -153,8 +162,8 @@ export default function HomePage() {
                 <Input
                   placeholder="Search for products..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setShowSearch(true)}
+                  onChange={handleSearchInputChange}
+                  onFocus={handleSearchInputFocus}
                   onKeyPress={(e) => e.key === "Enter" && handleSearch(searchQuery)}
                   className="pr-12"
                 />
@@ -166,11 +175,11 @@ export default function HomePage() {
                 >
                   <Search className="h-4 w-4" />
                 </Button>
-                {searchQuery.length >= 2 && showSearch && (
+                {searchQuery.length >= 2 && showSuggestions && (
                   <SearchSuggestions
                     query={searchQuery}
                     onSuggestionClick={handleSearch}
-                    onClose={() => setShowSearch(false)}
+                    onClose={() => setShowSuggestions(false)}
                     navigateToSearch={true}
                   />
                 )}
@@ -201,7 +210,7 @@ export default function HomePage() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setShowSearch(!showSearch)}
+                onClick={() => setShowSuggestions(!showSuggestions)}
               >
                 <Search className="h-5 w-5" />
               </Button>
@@ -225,14 +234,14 @@ export default function HomePage() {
         </div>
 
         {/* Mobile Search */}
-        {showSearch && (
+        {showSuggestions && (
           <div className="md:hidden border-t border-white/20 p-4">
             <div className="relative flex gap-2">
               <Input
                 placeholder="Search products..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setShowSearch(true)}
+                onChange={handleSearchInputChange}
+                onFocus={handleSearchInputFocus}
                 onKeyPress={(e) => e.key === "Enter" && handleSearch(searchQuery)}
                 className="flex-1"
               />
@@ -243,7 +252,7 @@ export default function HomePage() {
                 <SearchSuggestions
                   query={searchQuery}
                   onSuggestionClick={handleSearch}
-                  onClose={() => setShowSearch(false)}
+                  onClose={() => setShowSuggestions(false)}
                   navigateToSearch={true}
                 />
               )}
@@ -458,7 +467,7 @@ export default function HomePage() {
             <span className="text-xs font-medium">Categories</span>
           </button>
           <button
-            onClick={() => setShowSearch(!showSearch)}
+            onClick={() => setShowSuggestions(!showSuggestions)}
             className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-colors"
           >
             <Search className="h-5 w-5" />

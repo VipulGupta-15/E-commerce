@@ -117,10 +117,9 @@ export default function CategoryPage() {
     setSearchQuery(suggestion)
     const newFilters = { ...filters, search: suggestion }
     setFilters(newFilters)
-    fetchProducts(newFilters)
     setShowSuggestions(false)
     setShowSearch(false)
-  }, [filters, fetchProducts])
+  }, [filters])
 
   const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -218,13 +217,12 @@ export default function CategoryPage() {
                         <X className="h-4 w-4" />
                       </Button>
                     )}
-                    {showSuggestions && (
-                      <SearchSuggestions
-                        query={searchQuery}
-                        onSuggestionClick={handleSuggestionClick}
-                        onClose={() => setShowSuggestions(false)}
-                      />
-                    )}
+                    <SearchSuggestions
+                      query={searchQuery}
+                      onSuggestionClick={handleSuggestionClick}
+                      onClose={() => setShowSuggestions(false)}
+                      isVisible={showSuggestions}
+                    />
                   </div>
                   <Button type="submit" size="icon" className="bg-orange-500 hover:bg-orange-600 h-10 w-10">
                     <Search className="h-4 w-4" />
@@ -277,13 +275,12 @@ export default function CategoryPage() {
                     <X className="h-4 w-4" />
                   </Button>
                 )}
-                {showSuggestions && (
-                  <SearchSuggestions
-                    query={searchQuery}
-                    onSuggestionClick={handleSuggestionClick}
-                    onClose={() => setShowSuggestions(false)}
-                  />
-                )}
+                <SearchSuggestions
+                  query={searchQuery}
+                  onSuggestionClick={handleSuggestionClick}
+                  onClose={() => setShowSuggestions(false)}
+                  isVisible={showSuggestions}
+                />
               </form>
             </div>
 

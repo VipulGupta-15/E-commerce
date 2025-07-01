@@ -36,7 +36,7 @@ export default function SearchPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
-  const [showSearch, setShowSearch] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [searchQuery, setSearchQuery] = useState(initialQuery)
   const [filters, setFilters] = useState<FilterOptions>({
@@ -99,12 +99,24 @@ export default function SearchPage() {
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query)
     setFilters((prev) => ({ ...prev, search: query }))
-    setShowSearch(false)
+    setShowSuggestions(false)
   }, [])
 
   const handleSuggestionClick = useCallback((suggestion: string) => {
     handleSearch(suggestion)
   }, [handleSearch])
+
+  const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchQuery(value)
+    setShowSuggestions(value.length >= 2)
+  }, [])
+
+  const handleSearchInputFocus = useCallback(() => {
+    if (searchQuery.length >= 2) {
+      setShowSuggestions(true)
+    }
+  }, [searchQuery])
 
   const handleFilterChange = useCallback((newFilters: FilterOptions) => {
     setFilters(newFilters)
@@ -165,7 +177,8 @@ export default function SearchPage() {
                 <Input
                   placeholder="Search for products..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearchInputChange}
+                  onFocus={handleSearchInputFocus}
                   onKeyPress={(e) => e.key === "Enter" && handleSearch(searchQuery)}
                   className="pr-12"
                 />
@@ -180,14 +193,13 @@ export default function SearchPage() {
               </div>
               
               {/* Search Suggestions */}
-              {searchQuery.length >= 2 && showSearch && (
-                <SearchSuggestions
-                  query={searchQuery}
-                  onSuggestionClick={handleSuggestionClick}
-                  onClose={() => setShowSearch(false)}
-                  className="top-full mt-1"
-                />
-              )}
+              <SearchSuggestions
+                query={searchQuery}
+                onSuggestionClick={handleSuggestionClick}
+                onClose={() => setShowSuggestions(false)}
+                isVisible={showSuggestions}
+                className="top-full mt-1"
+              />
             </div>
 
             {/* Desktop Navigation */}
@@ -416,13 +428,10 @@ export default function SearchPage() {
             <ShoppingBag className="h-5 w-5" />
             <span className="text-xs font-medium">Home</span>
           </Link>
-          <button
-            onClick={() => setShowSearch(!showSearch)}
-            className="flex flex-col items-center gap-1 p-2 rounded-lg text-orange-500 bg-orange-50"
-          >
+          <Link href="/" className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-colors">
             <Search className="h-5 w-5" />
             <span className="text-xs font-medium">Search</span>
-          </button>
+          </Link>
           <button
             onClick={() => setShowFilters(true)}
             className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-colors relative"
