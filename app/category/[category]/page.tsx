@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { toast } from "@/hooks/use-toast"
 import { ArrowLeft, Filter, Search, Grid, List, Loader2, ShoppingBag, X, TrendingUp } from "lucide-react"
-import { Footer } from "@/components/footer"
+
 
 export default function CategoryPage() {
   const params = useParams()
@@ -472,8 +472,9 @@ export default function CategoryPage() {
           </button>
         </div>
       </div>
-      <div className="border-t text-center py-4 text-gray-500 text-sm">
-        © {new Date().getFullYear()} E-Commerce
+      {/* Simple footer without any API calls */}
+      <div className="border-t text-center py-4 text-gray-500 text-sm bg-white">
+        © {new Date().getFullYear()} StyleStore - Fashion & Lifestyle
       </div>
     </div>
   )
