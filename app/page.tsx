@@ -174,7 +174,7 @@ export default function HomePage() {
                 { name: "Women", href: "/category/women" },
                 { name: "Men", href: "/category/men" },
                 { name: "Kids", href: "/category/kids" },
-                { name: "Accessories", href: "/category/accessories" },
+                { name: "Footwear", href: "/category/footwear" },
               ].map((category) => (
                 <Link key={category.name} href={category.href}>
                   <Button
@@ -423,7 +423,7 @@ export default function HomePage() {
           { name: "Women", href: "/category/women", icon: "👗" },
           { name: "Men", href: "/category/men", icon: "👔" },
           { name: "Kids", href: "/category/kids", icon: "🧸" },
-          { name: "Accessories", href: "/category/accessories", icon: "👜" },
+          { name: "Footwear", href: "/category/footwear", icon: "👟" },
         ]}
         isOpen={showCategorySelector}
         onClose={() => setShowCategorySelector(false)}

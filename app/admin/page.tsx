@@ -72,7 +72,7 @@ export default function AdminPage() {
     order: 0,
   })
 
-  const categories = ["Men", "Women", "Kids", "Accessories", "Footwear"]
+  const categories = ["Men", "Women", "Kids", "Footwear"]
   const orderStatuses = ["Pending", "Confirmed", "Shipped", "Delivered", "Cancelled"]
 
   useEffect(() => {

@@ -27,13 +27,13 @@ const sampleProducts = [
     colors: ["Red", "Blue", "Yellow"],
   },
   {
-    name: "Leather Handbag",
-    description: "Elegant leather handbag with multiple compartments. Perfect for work or casual outings.",
-    category: "Accessories",
-    sizeOptions: ["One Size"],
+    name: "Running Sneakers",
+    description: "Comfortable running sneakers with breathable mesh and cushioned sole. Perfect for daily workouts.",
+    category: "Footwear",
+    sizeOptions: ["6", "7", "8", "9", "10", "11", "12"],
     price: 3999,
     images: ["/placeholder.svg?height=400&width=400"],
-    colors: ["Brown", "Black", "Tan"],
+    colors: ["White", "Black", "Blue"],
   },
   {
     name: "Formal Shirt",

@@ -22,7 +22,7 @@ export function ProductFilters({ onFiltersChange, isLoading = false }: ProductFi
   const [priceRange, setPriceRange] = useState([0, 10000])
   const [selectedColors, setSelectedColors] = useState<string[]>([])
 
-  const categories = ["Men", "Women", "Kids", "Accessories"]
+  const categories = ["Men", "Women", "Kids", "Footwear"]
   const colors = ["Black", "White", "Red", "Blue", "Green", "Pink", "Purple", "Yellow"]
 
   const handleSearchChange = useCallback(

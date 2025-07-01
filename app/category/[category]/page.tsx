@@ -37,7 +37,7 @@ export default function CategoryPage() {
       { name: "Women", href: "/category/women", icon: "👗", color: "from-pink-500 to-rose-500" },
       { name: "Men", href: "/category/men", icon: "👔", color: "from-blue-500 to-indigo-500" },
       { name: "Kids", href: "/category/kids", icon: "🧸", color: "from-green-500 to-emerald-500" },
-      { name: "Accessories", href: "/category/accessories", icon: "👜", color: "from-purple-500 to-violet-500" },
+      { name: "Footwear", href: "/category/footwear", icon: "👟", color: "from-purple-500 to-violet-500" },
     ],
     [],
   )
@@ -139,7 +139,7 @@ export default function CategoryPage() {
       women: "👗",
       men: "👔",
       kids: "🧸",
-      accessories: "👜",
+      footwear: "👟",
     }
     return icons[cat.toLowerCase()] || "🛍️"
   }
@@ -149,7 +149,7 @@ export default function CategoryPage() {
       women: "from-pink-500 to-rose-500",
       men: "from-blue-500 to-indigo-500",
       kids: "from-green-500 to-emerald-500",
-      accessories: "from-purple-500 to-violet-500",
+      footwear: "from-purple-500 to-violet-500",
     }
     return gradients[cat.toLowerCase()] || "from-gray-500 to-gray-600"
   }

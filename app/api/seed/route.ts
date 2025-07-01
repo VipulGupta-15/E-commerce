@@ -119,6 +119,20 @@ const sampleProducts = [
     ],
     featured: true,
   },
+  {
+    name: "Premium Running Shoes",
+    description: "High-performance running shoes with advanced cushioning and breathable design. Perfect for athletes and fitness enthusiasts.",
+    price: 4999,
+    category: "Footwear",
+    stock: 40,
+    colors: ["Black", "White", "Blue", "Red"],
+    sizeOptions: ["6", "7", "8", "9", "10", "11", "12"],
+    images: [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=500&h=500&fit=crop",
+    ],
+    featured: false,
+  },
 ]
 
 export async function POST() {
