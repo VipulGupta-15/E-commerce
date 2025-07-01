@@ -5,10 +5,9 @@ import type React from "react"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import type { Product, FilterOptions, Banner } from "@/lib/models"
+import type { Product, FilterOptions } from "@/lib/models"
 import { ProductCard } from "@/components/product-card"
 import { ProductFilters } from "@/components/product-filters"
-import { BannerCarousel } from "@/components/banner-carousel"
 import { SearchSuggestions } from "@/components/search-suggestions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,7 +28,6 @@ export default function CategoryPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [showCategorySelector, setShowCategorySelector] = useState(false)
-  const [banners, setBanners] = useState<Banner[]>([])
 
   const category = params.category as string
   const categoryName = category ? category.charAt(0).toUpperCase() + category.slice(1) : ""
@@ -156,21 +154,7 @@ export default function CategoryPage() {
     return gradients[cat.toLowerCase()] || "from-gray-500 to-gray-600"
   }
 
-  // Fetch banners
-  useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        const response = await fetch("/api/banners")
-        if (response.ok) {
-          const data = await response.json()
-          setBanners(data)
-        }
-      } catch (error) {
-        console.error("Error fetching banners:", error)
-      }
-    }
-    fetchBanners()
-  }, [])
+  
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -335,10 +319,7 @@ export default function CategoryPage() {
         </div>
       )}
 
-      {/* Banner Carousel - All Screens */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
-        <BannerCarousel banners={banners} />
-      </section>
+      
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-6">
